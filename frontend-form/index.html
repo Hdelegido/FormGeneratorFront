@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Formularis Dinàmics</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --gray-light: #e9ecef;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        header h1 i {
+            background: var(--primary);
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .app-version {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--gray);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background: #5a0891;
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-success:hover {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--gray-light);
+            padding-bottom: 1px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: var(--gray-light);
+            color: var(--gray);
+            border: none;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--gray-light);
+            transition: var(--transition);
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item:hover {
+            background: var(--gray-light);
+        }
+
+        .list-content {
+            flex-grow: 1;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: var(--border-radius);
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 100;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 4s forwards;
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast i {
+            font-size: 1.5rem;
+        }
+
+        .toast.success i {
+            color: var(--success);
+        }
+
+        .toast.error i {
+            color: var(--danger);
+        }
+
+        .toast-content {
+            flex-grow: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--gray);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .skeleton {
+            animation: skeleton-loading 1s linear infinite alternate;
+            border-radius: var(--border-radius);
+            height: 20px;
+            margin-bottom: 10px;
+        }
+
+        @keyframes skeleton-loading {
+            0% {
+                background-color: rgba(206, 212, 218, 0.5);
+            }
+            100% {
+                background-color: rgba(206, 212, 218, 0.9);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .list-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+
+        /* Loading spinner */
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--gray-light);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Form field validator styles */
+        .field-error {
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-top: 6px;
+        }
+
+        input.invalid, select.invalid, textarea.invalid {
+            border-color: var(--danger);
+            background-color: rgba(231, 76, 60, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .badge-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        /* Tooltip styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .tooltip i {
+            color: var(--gray);
+            cursor: help;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: var(--dark);
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Search highlight */
+        .highlight {
+            background-color: rgba(243, 156, 18, 0.3);
+            padding: 0 2px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>
+            <i class="fas fa-puzzle-piece"></i>
+            Gestor de Models Dinàmics
+        </h1>
+        <span class="app-version">v2.0</span>
+    </header>
+
+    <div class="grid">
+        <!-- 🔄 Carregar per editar per ID -->
+        <div class="card">
+            <h2><i class="fas fa-sync-alt"></i> Carregar objecte existent</h2>
+            <div class="search-container">
+                <div class="form-group" style="flex: 1;">
+                    <select id="editModel" class="form-control">
+                        <option value="">-- Selecciona model --</option>
+                        <option value="cliente">Cliente</option>
+                        <option value="clienteempresa">Cliente Empresa</option>
+                        <option value="clienteparticular">Cliente Particular</option>
+                        <option value="producto">Producto</option>
+                        <option value="compra">Compra</option>
+                        <option value="comentario">Comentario</option>
+                        <option value="categoria">Categoria</option>
+
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <input type="number" id="editId" class="form-control" placeholder="ID (ex: 1)">
+                </div>
+                <button id="editLoad" class="btn">
+                    <i class="fas fa-search"></i> Carregar
+                </button>
+            </div>
+            <div id="loadingIndicator" class="hidden">
+                <div class="loader"></div>
+            </div>
+        </div>
+
+        <!-- 📋 Crear o editar amb FormGenerator -->
+        <div class="card">
+            <h2 id="formTitle"><i class="fas fa-clipboard-list"></i> Crear objecte nou</h2>
+
+            <div class="form-group">
+                <label for="modelSelect">Selecciona un model:</label>
+                <select id="modelSelect" class="form-control">
+                    <option value="">-- Selecciona --</option>
+                    <option value="cliente">Cliente</option>
+                    <option value="clienteempresa">Cliente Empresa</option>
+                    <option value="clienteparticular">Cliente Particular</option>
+                    <option value="producto">Producto</option>
+                    <option value="categoria">Categoria</option>
+                    <option value="compra">Compra</option>
+                    <option value="comentario">Comentario</option>
+                </select>
+            </div>
+
+            <!-- Selector de estilo -->
+            <div class="form-group">
+                <label for="styleSelect">Estilo del formulario:</label>
+                <select id="styleSelect" class="form-control">
+                    <option value="">Estilo por defecto</option>
+                    <option value="modern">Moderno</option>
+                    <option value="classic">Clásico</option>
+                    <option value="corporate">Corporativo</option>
+                    <option value="file">Desde Archivo</option>
+
+                </select>
+
+                <div id="customStyleFile" class="form-group mt-2 hidden">
+                    <label for="styleFile">Selecciona un archivo CSS:</label>
+                    <div class="search-container">
+                        <input type="file" id="styleFile" accept=".css" class="form-control">
+                        <button id="loadStyleFileBtn" class="btn">
+                            <i class="fas fa-upload"></i> Aplicar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selector de colores del tema -->
+            <div class="form-group">
+                <label>Colores del tema:</label>
+                <div class="color-pickers">
+                    <div class="color-picker">
+                        <label for="primaryColor">Color principal:</label>
+                        <input type="color" id="primaryColor" value="#4361ee">
+                    </div>
+                    <div class="color-picker">
+                        <label for="errorColor">Color de error:</label>
+                        <input type="color" id="errorColor" value="#e74c3c">
+                    </div>
+                    <button id="applyColorsBtn" class="btn btn-sm">
+                        <i class="fas fa-paint-brush"></i> Aplicar colores
+                    </button>
+                </div>
+            </div>
+
+            <div id="formContainer"></div>
+        </div>
+    </div>
+
+    <!-- 📑 Llistat de dades -->
+    <div class="card">
+        <h2><i class="fas fa-database"></i> Navegador de dades</h2>
+
+        <div class="form-group">
+            <input type="text" id="searchData" class="form-control" placeholder="Cerca..." autocomplete="off">
+        </div>
+
+        <!-- Y también en las pestañas -->
+        <div class="tabs">
+            <button class="tab-btn active" data-model="cliente"><i class="fas fa-address-card"></i> Tots Clients
+            </button>
+            <button class="tab-btn" data-model="clienteempresa"><i class="fas fa-building"></i> Clients Empresa</button>
+            <button class="tab-btn" data-model="clienteparticular"><i class="fas fa-user"></i> Clients Particulars
+            </button>
+            <button class="tab-btn" data-model="producto"><i class="fas fa-box"></i> Productes</button>
+            <button class="tab-btn" data-model="categoria"><i class="fas fa-tags"></i> Categories</button>
+            <button class="tab-btn" data-model="compra"><i class="fas fa-receipt"></i> Compres</button>
+            <button class="tab-btn" data-model="comentario"><i class="fas fa-comment"></i> Comentaris</button>
+        </div>
+
+        <div id="dataList">
+            <div class="empty-state">
+                <i class="fas fa-search"></i>
+                <p>Selecciona una pestanya per veure les dades</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container for notifications -->
+<div id="toast-container"></div>
+
+<!-- Script para FormGenerator -->
+<script type="module">
+    import {FormGenerator} from './js/formGenerator.js';
+
+    // Estado global
+    let currentForm = null;
+    let currentModel = '';
+    let loadedItems = [];
+
+    // Utilidades
+    const $ = selector => document.querySelector(selector);
+
+    /**
+     * Obtiene el tema preferido del usuario
+     * @returns {string} El tema preferido ('light' o 'dark')
+     */
+    function getPreferredTheme() {
+        // Primero intentar obtener el tema guardado en localStorage
+        const savedTheme = localStorage.getItem('formGeneratorTheme');
+        if (savedTheme) {
+            return savedTheme;
+        }
+
+        // Si no hay tema guardado, usar preferencia del sistema
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            return 'dark';
+        }
+
+        // Por defecto, usar tema claro
+        return 'light';
+    }
+
+    /**
+     * Muestra un toast de notificación
+     * @param {string} message - Mensaje a mostrar
+     * @param {string} type - Tipo de notificación (success, error)
+     * @param {string} title - Título opcional
+     */
+    function showToast(message, type = 'success', title = '') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+
+        let iconClass = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+        let titleText = title || (type === 'success' ? 'Operació correcta' : 'Error');
+
+        toast.innerHTML = `
+        <i class="${iconClass}"></i>
+        <div class="toast-content">
+          <div class="toast-title">${titleText}</div>
+          <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close">&times;</button>
+      `;
+
+        $('#toast-container').appendChild(toast);
+
+        toast.querySelector('.toast-close').addEventListener('click', () => {
+            toast.remove();
+        });
+
+        // Auto-remove después de 5 segundos
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+
+    /**
+     * Muestra/oculta el indicador de carga
+     * @param {boolean} show - Si debe mostrarse
+     */
+    function toggleLoading(show) {
+        $('#loadingIndicator').classList.toggle('hidden', !show);
+    }
+
+    /**
+     * Realiza una petición a la API con manejo de errores
+     * @param {string} url - URL de la API
+     * @param {object} options - Opciones de fetch
+     * @returns {Promise} Respuesta de la API
+     */
+    async function apiRequest(url, options = {}) {
+        try {
+            toggleLoading(true);
+            const response = await fetch(url, options);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Error en la petició');
+            }
+
+            return data;
+        } catch (error) {
+            showToast(error.message, 'error');
+            throw error;
+        } finally {
+            toggleLoading(false);
+        }
+    }
+
+    /**
+     * Carga y renderiza un formulario
+     */
+    async function loadForm(model, editMode = false, id = null, initialData = null) {
+        try {
+            if (!model) return;
+
+            currentModel = model;
+
+            // Si no tenemos datos iniciales y estamos en modo edición, los cargamos
+            if (editMode && id && !initialData) {
+                initialData = await apiRequest(`http://localhost:8000/api/get/${model}/${id}/`);
+            }
+
+            // Cargamos el schema
+            const schema = await apiRequest(`http://localhost:8000/api/schema/${model}/`);
+
+            // Creamos el formulario
+            currentForm = new FormGenerator({
+                schema,
+                model,
+                container: $('#formContainer'),
+                initialData,
+                editMode,
+                editId: id,
+                theme: getPreferredTheme(),
+                options: {
+                    showThemeToggle: true,
+                    debug: false
+                },
+                onSubmitSuccess: (result) => {
+                    showToast(
+                        editMode
+                            ? `${model.charAt(0).toUpperCase() + model.slice(1)} actualitzat correctament`
+                            : `${model.charAt(0).toUpperCase() + model.slice(1)} creat correctament`
+                    );
+
+                    // Actualizamos el título del formulario
+                    updateFormTitle(model, editMode, id);
+
+                    // Recargamos los datos si la pestaña actual corresponde al modelo modificado
+                    const activeTab = document.querySelector('.tab-btn.active');
+                    if (activeTab && activeTab.dataset.model === model) {
+                        activeTab.click();
+                    }
+
+                    // Si estamos creando, reseteamos el formulario después de enviar
+                    if (!editMode) {
+                        currentForm.resetForm();
+                    }
+                },
+                onSubmitError: (error) => {
+                    showToast(error, 'error');
+                },
+                onCancel: () => {
+                    // Reset del formulario
+                    $('#modelSelect').value = '';
+                    $('#formContainer').innerHTML = '';
+                    updateFormTitle('', false);
+                }
+            });
+
+            currentForm.renderForm();
+            updateFormTitle(model, editMode, id);
+            setupPolymorphicFields();
+
+            if (schema.isPolymorphic) {
+                console.log(`Formulario polimórfico detectado: ${model}`);
+
+                // Si estamos en modo edición, podríamos necesitar cargar opciones
+                // específicas para los campos dependientes
+                if (editMode && initialData) {
+                    const contentTypeField = document.getElementById(schema.contentTypeField);
+                    const objectIdField = document.getElementById(schema.objectIdField);
+
+                    if (contentTypeField && objectIdField && initialData[schema.contentTypeField]) {
+                        // Cargar opciones para el object_id basadas en el content_type
+                        try {
+                            const objectsData = await apiRequest(
+                                `http://localhost:8000/api/content-type-objects/${initialData[schema.contentTypeField]}/`
+                            );
+
+                            // Limpiar opciones actuales
+                            objectIdField.innerHTML = '<option value="">-- Seleccionar --</option>';
+
+                            // Añadir nuevas opciones
+                            objectsData.forEach(obj => {
+                                const option = document.createElement('option');
+                                option.value = obj.id;
+                                option.textContent = obj.text;
+                                objectIdField.appendChild(option);
+                            });
+
+                            // Establecer valor seleccionado
+                            objectIdField.value = initialData[schema.objectIdField] || '';
+                        } catch (error) {
+                            console.error('Error al cargar opciones relacionadas:', error);
+                        }
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error('Error al cargar el formulario:', error);
+        }
+    }
+
+
+    /**
+     * Actualiza el título del formulario según el modo
+     */
+    function updateFormTitle(model, editMode, id = null) {
+        const title = $('#formTitle');
+        if (!model) {
+            title.innerHTML = '<i class="fas fa-clipboard-list"></i> Crear objecte nou';
+            return;
+        }
+
+        const modelName = model.charAt(0).toUpperCase() + model.slice(1);
+
+        if (editMode) {
+            title.innerHTML = `<i class="fas fa-edit"></i> Editar ${modelName} <span class="badge badge-primary">ID: ${id}</span>`;
+        } else {
+            title.innerHTML = `<i class="fas fa-plus-circle"></i> Crear ${modelName} nou`;
+        }
+    }
+
+    /**
+     * Renderiza la lista de elementos
+     */
+    function renderItemsList(model, items) {
+        const dataList = $('#dataList');
+
+        if (!items || items.length === 0) {
+            dataList.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No hi ha ${model}s per mostrar</p>
+          </div>
+        `;
+            return;
+        }
+
+        // Guardamos los items para búsquedas
+        loadedItems = items;
+
+        dataList.innerHTML = `
+        <div class="list-header">
+          <h3>
+            <i class="fas fa-list"></i> ${model.charAt(0).toUpperCase() + model.slice(1)}s
+            <span class="badge badge-primary">${items.length}</span>
+          </h3>
+        </div>
+      `;
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.dataset.id = item.id;
+
+            // Creamos un resumen de los datos
+            const summary = Object.entries(item)
+                .filter(([k, _]) => k !== 'id')
+                .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
+                .join(' | ');
+
+            div.innerHTML = `
+          <div class="list-content">
+            <strong>#${item.id}</strong> - ${summary}
+          </div>
+          <div class="actions">
+            <button class="btn btn-sm editBtn" title="Editar">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger deleteBtn" title="Eliminar">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        `;
+
+            dataList.appendChild(div);
+
+            // Eventos
+            div.querySelector('.editBtn').addEventListener('click', async () => {
+                try {
+                    const obj = await apiRequest(`http://localhost:8000/api/get/${model}/${item.id}/`);
+                    loadForm(model, true, item.id, obj);
+
+                    // Actualizamos el selector de modelo
+                    $('#modelSelect').value = model;
+
+                    // Hacemos scroll al formulario
+                    $('#formTitle').scrollIntoView({behavior: 'smooth'});
+                } catch (error) {
+                    console.error('Error al cargar el elemento:', error);
+                }
+            });
+
+            div.querySelector('.deleteBtn').addEventListener('click', async () => {
+                try {
+                    if (!confirm(`Segur que vols eliminar ${model} amb ID ${item.id}?`)) return;
+
+                    const result = await apiRequest(
+                        `http://localhost:8000/api/delete/${model}/${item.id}/`,
+                        {method: 'DELETE'}
+                    );
+
+                    showToast(result.message);
+
+                    // Recargamos la lista
+                    const activeTab = document.querySelector('.tab-btn.active');
+                    if (activeTab) {
+                        activeTab.click();
+                    }
+                } catch (error) {
+                    console.error('Error al eliminar:', error);
+                }
+            });
+        });
+    }
+
+    /**
+     * Filtra los elementos de la lista según el término de búsqueda
+     */
+    function filterItems(searchTerm) {
+        if (!loadedItems.length) return;
+
+        const dataList = $('#dataList');
+        const items = dataList.querySelectorAll('.list-item');
+
+        if (!searchTerm) {
+            items.forEach(item => item.classList.remove('hidden'));
+            return;
+        }
+
+        const term = searchTerm.toLowerCase();
+
+        items.forEach(item => {
+            const id = item.dataset.id;
+            const currentItem = loadedItems.find(i => i.id.toString() === id);
+
+            if (!currentItem) return;
+
+            const itemText = JSON.stringify(currentItem).toLowerCase();
+            const match = itemText.includes(term);
+
+            item.classList.toggle('hidden', !match);
+
+            // Highlight del término en el texto
+            if (match) {
+                const content = item.querySelector('.list-content');
+                let htmlContent = content.innerHTML;
+
+                // Eliminamos highlights anteriores
+                htmlContent = htmlContent.replace(/<span class="highlight">(.+?)<\/span>/g, '$1');
+
+                // Añadimos nuevo highlight
+                const regex = new RegExp(term, 'gi');
+                htmlContent = htmlContent.replace(regex, match => `<span class="highlight">${match}</span>`);
+
+                content.innerHTML = htmlContent;
+            }
+        });
+
+        // Mostramos mensaje si no hay resultados
+        const visibleItems = Array.from(items).filter(item => !item.classList.contains('hidden'));
+
+        if (visibleItems.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.innerHTML = `
+          <i class="fas fa-search"></i>
+          <p>No s'han trobat resultats per "${searchTerm}"</p>
+        `;
+
+            // Eliminamos mensajes anteriores
+            const existingEmpty = dataList.querySelector('.empty-state');
+            if (existingEmpty) {
+                existingEmpty.remove();
+            }
+
+            dataList.appendChild(emptyState);
+        } else {
+            // Eliminamos el mensaje si hay resultados
+            const existingEmpty = dataList.querySelector('.empty-state');
+            if (existingEmpty) {
+                existingEmpty.remove();
+            }
+        }
+    }
+
+    $('#modelSelect').addEventListener('change', function () {
+        $('#styleSelect').value = '';
+
+        loadForm(this.value);
+        if (this.value === 'comentario') {
+            setTimeout(setupPolymorphicFields, 300);
+        }
+    });
+    $('#editLoad').addEventListener('click', async () => {
+        const model = $('#editModel').value.trim().toLowerCase();
+        const id = $('#editId').value;
+
+        if (!model || !id) {
+            return showToast('Has d\'indicar model i ID', 'error');
+        }
+
+        try {
+            await loadForm(model, true, id);
+
+            // Actualizamos el selector de modelo
+            $('#modelSelect').value = model;
+        } catch (error) {
+            console.error('Error al cargar:', error);
+        }
+    });
+
+    // Pestañas de navegación
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            // Actualizamos clase activa
+            document.querySelectorAll('.tab-btn').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            btn.classList.add('active');
+
+            const model = btn.dataset.model;
+
+            try {
+                // Mostramos loader
+                $('#dataList').innerHTML = '<div class="loader"></div>';
+
+                const data = await apiRequest(`http://localhost:8000/api/all/${model}/`);
+                renderItemsList(model, data);
+            } catch (error) {
+                console.error('Error al cargar datos:', error);
+                $('#dataList').innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p>Error al cargar les dades: ${error.message}</p>
+            </div>
+          `;
+            }
+        });
+    });
+
+    // Búsqueda
+    $('#searchData').addEventListener('input', function () {
+        filterItems(this.value);
+    });
+
+    // Activamos la primera pestaña al cargar
+    document.querySelector('.tab-btn').click();
+
+    function setupPolymorphicFields() {
+        if (currentModel === 'comentario' && currentForm) {
+            console.log('Configurando campos polimórficos para Comentario');
+            const contentTypeSelect = document.getElementById('content_type');
+            const objectIdSelect = document.getElementById('object_id');
+
+            if (contentTypeSelect && objectIdSelect) {
+                contentTypeSelect.removeEventListener('change', handleContentTypeChange);
+                contentTypeSelect.addEventListener('change', handleContentTypeChange);
+
+                if (contentTypeSelect.value) {
+                    handleContentTypeChange.call(contentTypeSelect);
+                }
+            }
+        }
+    }
+
+    // Función para manejar el cambio de content_type
+    async function handleContentTypeChange() {
+        const contentTypeId = this.value;
+        const objectIdSelect = document.getElementById('object_id');
+
+        if (!objectIdSelect) return;
+
+        console.log('ContentType cambiado a:', contentTypeId);
+
+        // Limpiar opciones si no hay content_type seleccionado
+        if (!contentTypeId) {
+            objectIdSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+            return;
+        }
+
+        // Mostrar indicador de carga
+        objectIdSelect.disabled = true;
+        objectIdSelect.innerHTML = '<option value="">Cargando...</option>';
+
+        try {
+            // Cargar opciones desde API
+            console.log(`Cargando objetos para ContentType ${contentTypeId}`);
+            const response = await fetch(`http://localhost:8000/api/content-type-objects/${contentTypeId}/`);
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            const objects = await response.json();
+            console.log('Objetos cargados:', objects);
+
+            // Actualizar opciones en el select
+            objectIdSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+
+            objects.forEach(obj => {
+                const option = document.createElement('option');
+                option.value = obj.id;
+                option.textContent = obj.text;
+                objectIdSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error cargando objetos:', error);
+            objectIdSelect.innerHTML = '<option value="">Error al cargar opciones</option>';
+        } finally {
+            objectIdSelect.disabled = false;
+        }
+    }
+
+    // Código para manejar el selector de estilos
+    $('#styleSelect').addEventListener('change', function () {
+        if (!currentForm) {
+            showToast('Primero selecciona un modelo', 'error');
+            this.value = '';
+            return;
+        }
+
+        const selectedStyle = this.value;
+
+        // Ocultar/mostrar el selector de archivos según corresponda
+        $('#customStyleFile').classList.toggle('hidden', selectedStyle !== 'file');
+
+        // Aplicar estilo predefinido si es necesario
+        if (selectedStyle && selectedStyle !== 'file') {
+            applyPredefinedStyle(selectedStyle);
+        }
+    });
+
+
+    // Botón para cargar estilos desde archivo local
+    $('#loadStyleFileBtn').addEventListener('click', function () {
+        if (!currentForm) {
+            showToast('Primero selecciona un modelo', 'error');
+            return;
+        }
+
+        const fileInput = $('#styleFile');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showToast('Por favor, selecciona un archivo CSS', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const cssContent = e.target.result;
+            currentForm.applyCustomStyles(cssContent);
+            showToast('Estilos aplicados correctamente', 'success');
+        };
+
+        reader.onerror = function () {
+            showToast('Error al leer el archivo', 'error');
+        };
+
+        reader.readAsText(file);
+    });
+
+    // Botón para aplicar colores personalizados
+    $('#applyColorsBtn').addEventListener('click', function () {
+        if (!currentForm) {
+            showToast('Primero selecciona un modelo', 'error');
+            return;
+        }
+
+        const primaryColor = $('#primaryColor').value;
+        const errorColor = $('#errorColor').value;
+
+        // Aplicar tema personalizado
+        currentForm.applyCustomTheme({
+            primaryColor: primaryColor,
+            errorColor: errorColor
+        });
+
+        showToast('Colores aplicados correctamente', 'success');
+    });
+
+    // Función para aplicar estilos predefinidos
+    function applyPredefinedStyle(styleName) {
+        if (!currentForm) return;
+
+        // Definir estilos predefinidos
+        const styles = {
+            modern: {
+                '.form-group': {
+                    padding: '16px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(245, 247, 250, 0.6)',
+                    marginBottom: '20px',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+                    transition: 'all 0.3s ease'
+                },
+                'input, select, textarea': {
+                    padding: '14px',
+                    borderRadius: '8px',
+                    border: '1px solid #e1e8ed',
+                    fontSize: '15px',
+                    transition: 'all 0.2s ease'
+                },
+                'input:focus, select:focus, textarea:focus': {
+                    boxShadow: '0 0 0 3px rgba(29, 161, 242, 0.2)',
+                    borderColor: '#1da1f2'
+                },
+                'label': {
+                    fontWeight: '600',
+                    marginBottom: '10px',
+                    fontSize: '14px',
+                    color: '#14171a'
+                },
+                '.submit-btn': {
+                    backgroundColor: '#1da1f2',
+                    padding: '12px 24px',
+                    borderRadius: '30px',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    fontSize: '14px',
+                    letterSpacing: '0.5px'
+                },
+                '.cancel-btn': {
+                    backgroundColor: '#f5f8fa',
+                    color: '#657786',
+                    padding: '12px 24px',
+                    borderRadius: '30px',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    fontSize: '14px',
+                    letterSpacing: '0.5px'
+                }
+            },
+            classic: {
+                '.form-group': {
+                    padding: '16px',
+                    borderRadius: '0',
+                    borderLeft: '4px solid #4361ee',
+                    marginBottom: '20px',
+                    backgroundColor: '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                },
+                'input, select, textarea': {
+                    padding: '10px',
+                    borderRadius: '0',
+                    borderWidth: '0 0 2px 0',
+                    borderColor: '#ddd',
+                    fontSize: '16px'
+                },
+                'input:focus, select:focus, textarea:focus': {
+                    borderColor: '#4361ee',
+                    boxShadow: 'none'
+                },
+                'label': {
+                    fontWeight: '500',
+                    marginBottom: '8px',
+                    color: '#333'
+                },
+                '.submit-btn': {
+                    backgroundColor: '#4361ee',
+                    borderRadius: '0',
+                    padding: '10px 20px',
+                    fontWeight: '600'
+                },
+                '.cancel-btn': {
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '0',
+                    color: '#333',
+                    padding: '10px 20px',
+                    borderWidth: '1px',
+                    borderColor: '#ddd'
+                }
+            },
+            corporate: {
+                '.form-group': {
+                    padding: '20px',
+                    borderRadius: '5px',
+                    borderTop: '4px solid #2c3e50',
+                    marginBottom: '24px',
+                    backgroundColor: '#fff',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                },
+                'input, select, textarea': {
+                    padding: '12px',
+                    borderRadius: '4px',
+                    border: '1px solid #bdc3c7',
+                    fontSize: '15px'
+                },
+                'input:focus, select:focus, textarea:focus': {
+                    borderColor: '#3498db',
+                    boxShadow: '0 0 0 3px rgba(52, 152, 219, 0.2)'
+                },
+                'label': {
+                    fontWeight: '600',
+                    marginBottom: '8px',
+                    color: '#2c3e50',
+                    fontSize: '14px'
+                },
+                '.submit-btn': {
+                    backgroundColor: '#2c3e50',
+                    padding: '12px 24px',
+                    borderRadius: '4px',
+                    fontWeight: '600'
+                },
+                '.cancel-btn': {
+                    backgroundColor: '#ecf0f1',
+                    color: '#34495e',
+                    padding: '12px 24px',
+                    borderRadius: '4px',
+                    fontWeight: '600',
+                    border: 'none'
+                }
+            }
+        };
+
+        // Aplicar el estilo seleccionado
+        if (styles[styleName]) {
+            currentForm.applyCustomStyles(styles[styleName]);
+            showToast(`Estilo "${styleName}" aplicado correctamente`, 'success');
+        } else {
+            showToast('Estilo no encontrado', 'error');
+        }
+    }
+</script>
+</body>
+</html>

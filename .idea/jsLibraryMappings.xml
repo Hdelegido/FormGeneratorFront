@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JavaScriptLibraryMappings">
+    <file url="file://$PROJECT_DIR$" libraries="{@json-editor/json-editor, font-awesome, leaflet, leaflet-draw, lodash}" />
+  </component>
+</project>
