@@ -78,6 +78,14 @@ export default class FormGenerator {
      * Realiza peticiones API o usa callbacks según configuración
      */
     async apiRequest(action, options = {}) {
+        // Debug mejorado
+        console.log(`🔧 FormGenerator Debug:`);
+        console.log(`   Action: ${action}`);
+        console.log(`   Options:`, options);
+        console.log(`   URL construida: ${options.url}`);
+        console.log(`   Method: ${options.method || 'GET'}`);
+        console.log(`   Data:`, options.data);
+
         // Si hay callback definido para esta acción, usarlo
         if (this.callbacks[action] && typeof this.callbacks[action] === 'function') {
             if (this.options.debug) {
@@ -98,14 +106,47 @@ export default class FormGenerator {
                 body: options.data ? JSON.stringify(options.data) : undefined
             });
 
+            console.log(`📡 Response status: ${response.status}`);
+            console.log(`📡 Response headers:`, response.headers);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error en la petición');
+                const responseText = await response.text();
+                console.error(`❌ Response error text:`, responseText);
+
+                // Intentar parsear como JSON, si no, usar el texto completo
+                try {
+                    const errorData = JSON.parse(responseText);
+                    console.error(`❌ Parsed error data:`, errorData);
+
+                    // Manejar diferentes formatos de error
+                    let errorMessage = 'Error en la petición';
+
+                    if (typeof errorData.error === 'string') {
+                        errorMessage = errorData.error;
+                    } else if (typeof errorData.error === 'object') {
+                        // Si es un objeto con errores por campo
+                        errorMessage = Object.entries(errorData.error)
+                            .map(([field, msg]) => `${field}: ${Array.isArray(msg) ? msg.join(', ') : msg}`)
+                            .join('; ');
+                    } else if (errorData.message) {
+                        errorMessage = errorData.message;
+                    } else if (errorData.detail) {
+                        errorMessage = errorData.detail;
+                    }
+
+                    throw new Error(errorMessage);
+                } catch (parseError) {
+                    console.error(`❌ Error parsing JSON:`, parseError);
+                    throw new Error(`Error ${response.status}: ${responseText.substring(0, 200)}...`);
+                }
             }
 
-            return await response.json();
+            const result = await response.json();
+            console.log(`✅ Response success:`, result);
+            return result;
+
         } catch (error) {
-            console.error(`Error en apiRequest (${action}):`, error);
+            console.error(`❌ Error en apiRequest (${action}):`, error);
             throw error;
         }
     }
@@ -527,6 +568,8 @@ export default class FormGenerator {
             } else if (field.format === 'textarea' ||
                 (field.type === 'string' && field.maxLength && field.maxLength > 255)) {
                 input = this.createTextareaField(key, field, value);
+            } else if (field.format === 'map' || field.type === 'geometry' || key === 'zona_distribucion') {
+                input = this.createMapField(key, field, value);
             } else {
                 input = this.createTextField(key, field, value);
             }
@@ -973,18 +1016,15 @@ export default class FormGenerator {
             group.appendChild(fileHelp);
         }
 
-        // Añadir el grupo completo al contenedor principal
         container.appendChild(group);
 
-        // Configurar validación inicial
         if (value) {
             this.validateField(fieldName, value);
         }
 
-        // Para campos de mapa, inicializar después de que esté en el DOM
         if (fieldType === 'map' && typeof L !== 'undefined') {
             setTimeout(() => {
-                this.initializeMapField(fieldName, input, value);
+                this.initializeLeafletMap(fieldName, fieldSchema, value);
             }, 100);
         }
     }
@@ -1029,7 +1069,6 @@ export default class FormGenerator {
             return 'password';
         }
 
-        // 2. Verificar format explícito
         if (fieldSchema.format) {
             switch (fieldSchema.format) {
                 case 'multiselect':
@@ -1054,7 +1093,6 @@ export default class FormGenerator {
             }
         }
 
-        // 3. Verificar propiedades especiales
         if (fieldSchema.isManyToMany) {
             return 'multiselect';
         }
@@ -1067,7 +1105,6 @@ export default class FormGenerator {
             return 'boolean';
         }
 
-        // 4. Verificar tipo básico con características especiales
         if (fieldSchema.type === 'string') {
             if (fieldSchema.maxLength && fieldSchema.maxLength > 255) {
                 return 'textarea';
@@ -1083,7 +1120,15 @@ export default class FormGenerator {
             return 'number';
         }
 
-        // 5. Por defecto, asumir texto
+        if (fieldName === 'polygon' ||
+            fieldName === 'zona_distribucion' ||
+            fieldName.includes('geojson') ||
+            fieldName.includes('geometry') ||
+            fieldName.includes('map') ||
+            fieldSchema.format === 'map') {
+            return 'map';
+        }
+
         return 'text';
     }
 
@@ -1098,10 +1143,8 @@ export default class FormGenerator {
         const label = document.createElement('label');
         label.htmlFor = fieldName;
 
-        // Determinar el tipo para elegir icono
         const fieldType = this.detectFieldType(fieldName, fieldSchema);
 
-        // Mapeo de tipos a clases de iconos
         const iconMap = {
             'text': 'fa-font',
             'textarea': 'fa-paragraph',
@@ -1116,15 +1159,13 @@ export default class FormGenerator {
             'color': 'fa-palette',
             'file': 'fa-file',
             'image': 'fa-image',
-            'map': 'fa-map-marker-alt',
             'password': 'fa-lock',
-            'range': 'fa-sliders-h'
+            'range': 'fa-sliders-h',
+            'map': 'fa-map-marker-alt',
         };
 
-        // Obtener icono del mapa o usar uno genérico
         const iconClass = iconMap[fieldType] || 'fa-keyboard';
 
-        // Crear etiqueta con icono y texto
         label.innerHTML = `
         <i class="fas ${iconClass} field-icon"></i>
         <span>${fieldSchema.title || this.humanizeFieldName(fieldName)}</span>
@@ -1422,58 +1463,87 @@ export default class FormGenerator {
     /**
      * Obtiene los datos del formulario
      */
-    getFormData() {
-        const formData = {};
-        const properties = this.schema.properties || {};
+/**
+ * Obtiene los datos del formulario con manejo especial para campos JSON
+ */
+getFormData() {
+    const formData = {};
+    const properties = this.schema.properties || {};
 
-        for (const key in properties) {
-            const field = properties[key];
-            const input = document.getElementById(key);
+    for (const key in properties) {
+        const field = properties[key];
+        const input = document.getElementById(key);
 
-            if (!input) continue;
+        if (!input) continue;
 
-            let value;
+        let value;
 
-            if (field.type === 'boolean') {
-                // Para campos booleanos, verificar si está marcado
-                if (input.tagName === 'DIV') {
-                    // Si es un switch personalizado
-                    const checkbox = input.querySelector('input[type="checkbox"]');
-                    value = checkbox ? checkbox.checked : false;
-                } else {
-                    // Si es un checkbox normal
-                    value = input.checked;
-                }
-            } else if (field.format === 'multiselect' || field.isManyToMany) {
-                // Para campos de selección múltiple
-                const selectedOptions = Array.from(input.selectedOptions);
-                value = selectedOptions.map(option => option.value);
-            } else if (field.type === 'number' || field.type === 'integer') {
-                // Convertir a número si el campo no está vacío
-                value = input.value !== '' ? Number(input.value) : null;
+        if (field.type === 'boolean') {
+            // Para campos booleanos, verificar si está marcado
+            if (input.tagName === 'DIV') {
+                // Si es un switch personalizado
+                const checkbox = input.querySelector('input[type="checkbox"]');
+                value = checkbox ? checkbox.checked : false;
             } else {
-                // Valor normal para otros tipos
-                value = input.value;
+                // Si es un checkbox normal
+                value = input.checked;
             }
-            if (value !== undefined && value !== '' && value !== null) {
-                formData[key] = value;
-            } else if (field.required) {
-                formData[key] = field.type === 'string' ? '' : null;
-            } else if (field.format === 'file' || field.format === 'image') {
-                const fileInput = document.getElementById(key);
-                if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                    if (this.options.useFormData) {
-                        formData[key] = fileInput.files;
-                    } else {
-                        formData[key] = value;
-                    }
+        } else if (field.format === 'multiselect' || field.isManyToMany) {
+            // Para campos de selección múltiple
+            const selectedOptions = Array.from(input.selectedOptions);
+            value = selectedOptions.map(option => option.value);
+        } else if (field.type === 'number' || field.type === 'integer') {
+            // Convertir a número si el campo no está vacío
+            value = input.value !== '' ? Number(input.value) : null;
+        } else if (field.format === 'map' || key === 'zona_distribucion') {
+            // NUEVO: Manejo especial para campos geoespaciales
+            if (input.value) {
+                try {
+                    // Intentar parsear el JSON para validarlo
+                    const geoJsonData = JSON.parse(input.value);
+
+                    // Verificar si necesitamos enviarlo como objeto o string según el backend
+                    // Tu modelo Django espera JSON en texto, así que lo mantenemos como string
+                    value = input.value; // Mantener como string
+
+                    console.log(`🗺️ Campo geoespacial ${key}:`, {
+                        rawValue: input.value,
+                        parsedValue: geoJsonData,
+                        finalValue: value
+                    });
+
+                } catch (e) {
+                    console.error(`Error parseando JSON geoespacial para ${key}:`, e);
+                    value = input.value; // Usar valor raw si hay error de parsing
+                }
+            } else {
+                value = null;
+            }
+        } else {
+            // Valor normal para otros tipos
+            value = input.value;
+        }
+
+        // Solo añadir al formData si tiene valor o es requerido
+        if (value !== undefined && value !== '' && value !== null) {
+            formData[key] = value;
+        } else if (field.required) {
+            formData[key] = field.type === 'string' ? '' : null;
+        } else if (field.format === 'file' || field.format === 'image') {
+            const fileInput = document.getElementById(key);
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                if (this.options.useFormData) {
+                    formData[key] = fileInput.files;
+                } else {
+                    formData[key] = value;
                 }
             }
         }
-
-        return formData;
     }
 
+    console.log('📋 Form data procesado:', formData);
+    return formData;
+}
     /**
      * Maneja errores devueltos por la API
      */
@@ -1753,181 +1823,6 @@ export default class FormGenerator {
         });
 
         return select;
-    }
-
-    /**
-     * Crea un campo de tipo mapa para datos geoespaciales
-     * @param {string} key - Nombre del campo
-     * @param {Object} field - Esquema del campo
-     * @param {Object} value - Valor inicial (GeoJSON)
-     * @returns {HTMLElement} - Contenedor con el mapa
-     */
-    createMapField(key, field, value) {
-        // Crear un contenedor para el mapa
-        const mapContainer = document.createElement('div');
-        mapContainer.className = 'form-map-container';
-        mapContainer.style.height = '300px';
-        mapContainer.style.width = '100%';
-
-        // Input oculto para almacenar los datos GeoJSON
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.id = key;
-        input.name = key;
-        input.className = 'form-map-input';
-        input.value = value ? (typeof value === 'string' ? value : JSON.stringify(value)) : '';
-
-        mapContainer.appendChild(input);
-
-        // Mensaje si Leaflet no está disponible
-        if (typeof L === 'undefined') {
-            const mapError = document.createElement('div');
-            mapError.className = 'map-error';
-            mapError.innerHTML = `
-            <div style="padding: 20px; text-align: center;">
-                <i class="fas fa-map-marker-alt" style="font-size: 2rem; color: #ccc;"></i>
-                <p>Para utilizar mapas, incluye Leaflet en tu proyecto:</p>
-                <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; text-align: left; font-size: 0.8rem;">
-&lt;link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" /&gt;
-&lt;link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" /&gt;
-&lt;script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"&gt;&lt;/script&gt;
-&lt;script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"&gt;&lt;/script&gt;
-                </pre>
-            </div>
-        `;
-            mapContainer.appendChild(mapError);
-        }
-
-        return mapContainer;
-    }
-
-    /**
-     * Inicializa un campo de mapa una vez que está en el DOM
-     * @param {string} fieldName - Nombre del campo
-     * @param {HTMLElement} container - Contenedor del mapa
-     * @param {Object} value - Valor inicial (GeoJSON)
-     */
-    initializeMapField(fieldName, container, value) {
-        if (typeof L === 'undefined' || !container) return;
-
-        // Limpiar contenedor
-        container.innerHTML = '';
-
-        // Input oculto para almacenar los datos GeoJSON
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.id = fieldName;
-        input.name = fieldName;
-        input.className = 'form-map-input';
-        input.value = value ? (typeof value === 'string' ? value : JSON.stringify(value)) : '';
-
-        container.appendChild(input);
-
-        // Inicializar mapa en las coordenadas predeterminadas o basadas en el valor
-        let initialView = [41.6, 2.0]; // Coordenadas para Cataluña por defecto
-        let initialZoom = 10;
-
-        // Si hay valor, intentar obtener centro del polígono
-        if (value) {
-            try {
-                const geoJson = typeof value === 'string' ? JSON.parse(value) : value;
-                // Intentar extraer coordenadas para centrar el mapa
-                if (geoJson.geometry && geoJson.geometry.coordinates) {
-                    const coords = geoJson.geometry.coordinates;
-                    if (coords.length > 0) {
-                        // Extraer primer punto para centrar (simplificado)
-                        if (Array.isArray(coords[0]) && coords[0].length >= 2) {
-                            initialView = [coords[0][1], coords[0][0]]; // [lat, lng]
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Error al procesar GeoJSON:', e);
-            }
-        }
-
-        // Crear el mapa
-        const map = L.map(container).setView(initialView, initialZoom);
-
-        // Añadir capa base de OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        // Grupo para almacenar elementos dibujados
-        const drawnItems = new L.FeatureGroup();
-        map.addLayer(drawnItems);
-
-        // Configurar controles de dibujo si Leaflet.Draw está disponible
-        if (L.Control.Draw) {
-            const drawControl = new L.Control.Draw({
-                edit: {
-                    featureGroup: drawnItems
-                },
-                draw: {
-                    polygon: true,
-                    polyline: false,
-                    rectangle: true,
-                    circle: false,
-                    marker: false,
-                    circlemarker: false
-                }
-            });
-            map.addControl(drawControl);
-
-            // Eventos para capturar cambios en el dibujo
-            map.on(L.Draw.Event.CREATED, (event) => {
-                const layer = event.layer;
-                drawnItems.addLayer(layer);
-                updateGeoJsonValue();
-            });
-
-            map.on(L.Draw.Event.EDITED, () => {
-                updateGeoJsonValue();
-            });
-
-            map.on(L.Draw.Event.DELETED, () => {
-                updateGeoJsonValue();
-            });
-        }
-
-        // Cargar polígono existente si hay valor
-        if (value) {
-            try {
-                const geoJson = typeof value === 'string' ? JSON.parse(value) : value;
-                L.geoJSON(geoJson).eachLayer(layer => {
-                    drawnItems.addLayer(layer);
-                });
-
-                // Ajustar vista al polígono existente
-                if (drawnItems.getBounds().isValid()) {
-                    map.fitBounds(drawnItems.getBounds());
-                }
-            } catch (e) {
-                console.error('Error al cargar el polígono:', e);
-            }
-        }
-
-        // Función para actualizar el valor GeoJSON
-        function updateGeoJsonValue() {
-            const geoJson = drawnItems.toGeoJSON();
-            input.value = JSON.stringify(geoJson);
-
-            // Disparar evento change para la validación
-            const event = new Event('change');
-            input.dispatchEvent(event);
-        }
-
-        // Guardar referencia al mapa para acceso posterior
-        this.maps = this.maps || {};
-        this.maps[fieldName] = map;
-
-        // Actualizar mapa cuando se cambia el tamaño de la ventana
-        window.addEventListener('resize', () => {
-            if (this.maps && this.maps[fieldName]) {
-                this.maps[fieldName].invalidateSize();
-            }
-        });
     }
 
     /**
@@ -2339,5 +2234,184 @@ export default class FormGenerator {
             this.options.onThemeChange(theme);
         }
 
+    }
+
+    /**
+     * Crea un campo de mapa para dibujar polígonos
+     */
+    createMapField(key, field, value) {
+        const mapContainer = document.createElement('div');
+        mapContainer.className = 'map-field-container';
+        mapContainer.dataset.field = key;
+
+        const mapDiv = document.createElement('div');
+        mapDiv.className = 'leaflet-map';
+        mapDiv.id = `map-${key}`;
+        mapDiv.style.height = field.mapHeight || '400px';
+        mapDiv.style.width = '100%';
+        mapDiv.style.border = '1px solid #ced4da';
+        mapDiv.style.borderRadius = '4px';
+
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.id = key;
+        hiddenInput.name = key;
+        hiddenInput.value = value || '';
+
+        const mapControls = document.createElement('div');
+        mapControls.className = 'map-controls';
+        mapControls.innerHTML = `
+        <div class="map-controls-buttons">
+            <button type="button" class="btn btn-sm btn-primary start-drawing" title="Dibujar zona">
+                <i class="fas fa-draw-polygon"></i> Dibujar
+            </button>
+            <button type="button" class="btn btn-sm btn-warning clear-drawing" title="Limpiar zona">
+                <i class="fas fa-trash"></i> Limpiar
+            </button>
+        </div>
+        <div class="map-info">
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i> 
+                Haz clic en "Dibujar" y luego dibuja en el mapa para definir la zona
+            </small>
+        </div>
+    `;
+
+        mapContainer.appendChild(mapControls);
+        mapContainer.appendChild(mapDiv);
+        mapContainer.appendChild(hiddenInput);
+
+        setTimeout(() => {
+            this.initializeLeafletMap(key, field, value);
+        }, 100);
+
+        return mapContainer;
+    }
+
+    /**
+     * Inicializa el mapa de Leaflet con capacidades de dibujo
+     */
+    /**
+     * Inicializa el mapa de Leaflet con capacidades de dibujo
+     */
+    initializeLeafletMap(fieldKey, fieldConfig, initialValue) {
+        if (typeof L === 'undefined') {
+            console.error('Leaflet no está cargado. Incluye las librerías necesarias.');
+            return;
+        }
+
+        const mapId = `map-${fieldKey}`;
+        const mapElement = document.getElementById(mapId);
+
+        if (!mapElement) {
+            console.error(`No se encontró el elemento del mapa: ${mapId}`);
+            return;
+        }
+
+        if (mapElement._leaflet_id) {
+            if (window.mapInstances && window.mapInstances[mapId]) {
+                window.mapInstances[mapId].remove();
+                delete window.mapInstances[mapId];
+            }
+            // Limpiar el atributo de Leaflet
+            delete mapElement._leaflet_id;
+        }
+
+        mapElement.innerHTML = '';
+
+        mapElement.style.display = 'block';
+        if (!mapElement.offsetHeight) {
+            mapElement.style.height = fieldConfig.mapHeight || '400px';
+        }
+
+        const defaultCenter = fieldConfig.center || [41.3851, 2.1734];
+        const defaultZoom = fieldConfig.zoom || 10;
+
+        const map = L.map(mapId).setView(defaultCenter, defaultZoom);
+
+        if (!window.mapInstances) {
+            window.mapInstances = {};
+        }
+        window.mapInstances[mapId] = map;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        const container = mapElement.parentNode;
+        const startDrawingBtn = container.querySelector('.start-drawing');
+        const clearDrawingBtn = container.querySelector('.clear-drawing');
+        const hiddenInput = container.querySelector(`input[name="${fieldKey}"]`);
+
+        let isDrawing = false;
+
+        function updateHiddenInput() {
+            const geoJson = drawnItems.toGeoJSON();
+            hiddenInput.value = JSON.stringify(geoJson);
+            hiddenInput.dispatchEvent(new Event('change'));
+        }
+
+        if (startDrawingBtn._leafletClickHandler) {
+            startDrawingBtn.removeEventListener('click', startDrawingBtn._leafletClickHandler);
+        }
+        if (clearDrawingBtn._leafletClickHandler) {
+            clearDrawingBtn.removeEventListener('click', clearDrawingBtn._leafletClickHandler);
+        }
+
+        const startDrawingHandler = function () {
+            if (!isDrawing && typeof L.Draw !== 'undefined') {
+                new L.Draw.Polygon(map).enable();
+                isDrawing = true;
+                startDrawingBtn.innerHTML = '<i class="fas fa-stop"></i> Parar';
+                startDrawingBtn.classList.add('btn-danger');
+                startDrawingBtn.classList.remove('btn-primary');
+            }
+        };
+
+        const clearDrawingHandler = function () {
+            drawnItems.clearLayers();
+            updateHiddenInput();
+            isDrawing = false;
+            startDrawingBtn.innerHTML = '<i class="fas fa-draw-polygon"></i> Dibujar';
+            startDrawingBtn.classList.add('btn-primary');
+            startDrawingBtn.classList.remove('btn-danger');
+        };
+
+        startDrawingBtn._leafletClickHandler = startDrawingHandler;
+        clearDrawingBtn._leafletClickHandler = clearDrawingHandler;
+
+        startDrawingBtn.addEventListener('click', startDrawingHandler);
+        clearDrawingBtn.addEventListener('click', clearDrawingHandler);
+
+        if (typeof L.Draw !== 'undefined') {
+            map.on(L.Draw.Event.CREATED, function (e) {
+                drawnItems.clearLayers(); // Solo permitir un polígono
+                drawnItems.addLayer(e.layer);
+                updateHiddenInput();
+                isDrawing = false;
+                startDrawingBtn.innerHTML = '<i class="fas fa-draw-polygon"></i> Dibujar';
+                startDrawingBtn.classList.add('btn-primary');
+                startDrawingBtn.classList.remove('btn-danger');
+            });
+        }
+
+        if (initialValue) {
+            try {
+                const geoJson = typeof initialValue === 'string' ? JSON.parse(initialValue) : initialValue;
+                if (geoJson && geoJson.features && geoJson.features.length > 0) {
+                    const layer = L.geoJSON(geoJson).addTo(drawnItems);
+                    map.fitBounds(layer.getBounds());
+                }
+            } catch (e) {
+                console.error('Error cargando valor inicial del mapa:', e);
+            }
+        }
+
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 250);
     }
 }

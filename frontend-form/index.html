@@ -597,7 +597,7 @@
 
 <!-- Script para FormGenerator -->
 <script type="module">
-    import {FormGenerator} from './js/formGenerator.js';
+    import FormGenerator from './js/formGenerator.js';
 
     // Estado global
     let currentForm = null;
@@ -677,9 +677,130 @@
      * @param {object} options - Opciones de fetch
      * @returns {Promise} Respuesta de la API
      */
+
+    /**
+     * Carga y renderiza un formulario
+     */
+    // En tu index.html, reemplaza la función loadForm completa:
+
+    async function loadForm(model, editMode = false, id = null, initialData = null) {
+        try {
+            if (!model) return;
+
+            currentModel = model;
+
+            const API_BASE_URL = 'http://localhost:8000';
+
+            if (editMode && id && !initialData) {
+                initialData = await apiRequest(`${API_BASE_URL}/api/get/${model}/${id}/`);
+            }
+
+            const schema = await apiRequest(`${API_BASE_URL}/api/schema/${model}/`);
+
+            currentForm = new FormGenerator({
+                schema,
+                model,
+                container: $('#formContainer'),
+                initialData,
+                editMode,
+                editId: id,
+                theme: getPreferredTheme(),
+
+                // ✅ CONFIGURACIÓN CORRECTA DE API
+                apiConfig: {
+                    baseUrl: API_BASE_URL, // Esto es clave
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                    // Los endpoints se construirán automáticamente con la baseUrl correcta
+                },
+
+                options: {
+                    showThemeToggle: true,
+                    debug: true // Mantener debug activo
+                },
+
+                onSubmitSuccess: (result) => {
+                    showToast(
+                        editMode
+                            ? `${model.charAt(0).toUpperCase() + model.slice(1)} actualitzat correctament`
+                            : `${model.charAt(0).toUpperCase() + model.slice(1)} creat correctament`
+                    );
+
+                    updateFormTitle(model, editMode, id);
+
+                    const activeTab = document.querySelector('.tab-btn.active');
+                    if (activeTab && activeTab.dataset.model === model) {
+                        activeTab.click();
+                    }
+
+                    if (!editMode) {
+                        currentForm.resetForm();
+                    }
+                },
+
+                onSubmitError: (error) => {
+                    console.error('Error detallado:', error);
+                    showToast(error.message || 'Error al enviar el formulario', 'error');
+                },
+
+                onCancel: () => {
+                    $('#modelSelect').value = '';
+                    $('#formContainer').innerHTML = '';
+                    updateFormTitle('', false);
+                }
+            });
+
+            currentForm.renderForm();
+            updateFormTitle(model, editMode, id);
+            setupPolymorphicFields();
+
+            // Resto del código para campos polimórficos...
+            if (schema.isPolymorphic) {
+                console.log(`Formulario polimórfico detectado: ${model}`);
+
+                if (editMode && initialData) {
+                    const contentTypeField = document.getElementById(schema.contentTypeField);
+                    const objectIdField = document.getElementById(schema.objectIdField);
+
+                    if (contentTypeField && objectIdField && initialData[schema.contentTypeField]) {
+                        try {
+                            const objectsData = await apiRequest(
+                                `${API_BASE_URL}/api/content-type-objects/${initialData[schema.contentTypeField]}/`
+                            );
+
+                            objectIdField.innerHTML = '<option value="">-- Seleccionar --</option>';
+
+                            objectsData.forEach(obj => {
+                                const option = document.createElement('option');
+                                option.value = obj.id;
+                                option.textContent = obj.text;
+                                objectIdField.appendChild(option);
+                            });
+
+                            objectIdField.value = initialData[schema.objectIdField] || '';
+                        } catch (error) {
+                            console.error('Error al cargar opciones relacionadas:', error);
+                        }
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error('Error al cargar el formulario:', error);
+            showToast('Error al cargar el formulario: ' + error.message, 'error');
+        }
+    }
+
+    // También actualiza la función apiRequest para usar la URL base correcta
     async function apiRequest(url, options = {}) {
         try {
             toggleLoading(true);
+
+            console.log(`🔧 API Request Debug:`);
+            console.log(`   URL: ${url}`);
+            console.log(`   Options:`, options);
+
             const response = await fetch(url, options);
             const data = await response.json();
 
@@ -693,113 +814,6 @@
             throw error;
         } finally {
             toggleLoading(false);
-        }
-    }
-
-    /**
-     * Carga y renderiza un formulario
-     */
-    async function loadForm(model, editMode = false, id = null, initialData = null) {
-        try {
-            if (!model) return;
-
-            currentModel = model;
-
-            // Si no tenemos datos iniciales y estamos en modo edición, los cargamos
-            if (editMode && id && !initialData) {
-                initialData = await apiRequest(`http://localhost:8000/api/get/${model}/${id}/`);
-            }
-
-            // Cargamos el schema
-            const schema = await apiRequest(`http://localhost:8000/api/schema/${model}/`);
-
-            // Creamos el formulario
-            currentForm = new FormGenerator({
-                schema,
-                model,
-                container: $('#formContainer'),
-                initialData,
-                editMode,
-                editId: id,
-                theme: getPreferredTheme(),
-                options: {
-                    showThemeToggle: true,
-                    debug: false
-                },
-                onSubmitSuccess: (result) => {
-                    showToast(
-                        editMode
-                            ? `${model.charAt(0).toUpperCase() + model.slice(1)} actualitzat correctament`
-                            : `${model.charAt(0).toUpperCase() + model.slice(1)} creat correctament`
-                    );
-
-                    // Actualizamos el título del formulario
-                    updateFormTitle(model, editMode, id);
-
-                    // Recargamos los datos si la pestaña actual corresponde al modelo modificado
-                    const activeTab = document.querySelector('.tab-btn.active');
-                    if (activeTab && activeTab.dataset.model === model) {
-                        activeTab.click();
-                    }
-
-                    // Si estamos creando, reseteamos el formulario después de enviar
-                    if (!editMode) {
-                        currentForm.resetForm();
-                    }
-                },
-                onSubmitError: (error) => {
-                    showToast(error, 'error');
-                },
-                onCancel: () => {
-                    // Reset del formulario
-                    $('#modelSelect').value = '';
-                    $('#formContainer').innerHTML = '';
-                    updateFormTitle('', false);
-                }
-            });
-
-            currentForm.renderForm();
-            updateFormTitle(model, editMode, id);
-            setupPolymorphicFields();
-
-            if (schema.isPolymorphic) {
-                console.log(`Formulario polimórfico detectado: ${model}`);
-
-                // Si estamos en modo edición, podríamos necesitar cargar opciones
-                // específicas para los campos dependientes
-                if (editMode && initialData) {
-                    const contentTypeField = document.getElementById(schema.contentTypeField);
-                    const objectIdField = document.getElementById(schema.objectIdField);
-
-                    if (contentTypeField && objectIdField && initialData[schema.contentTypeField]) {
-                        // Cargar opciones para el object_id basadas en el content_type
-                        try {
-                            const objectsData = await apiRequest(
-                                `http://localhost:8000/api/content-type-objects/${initialData[schema.contentTypeField]}/`
-                            );
-
-                            // Limpiar opciones actuales
-                            objectIdField.innerHTML = '<option value="">-- Seleccionar --</option>';
-
-                            // Añadir nuevas opciones
-                            objectsData.forEach(obj => {
-                                const option = document.createElement('option');
-                                option.value = obj.id;
-                                option.textContent = obj.text;
-                                objectIdField.appendChild(option);
-                            });
-
-                            // Establecer valor seleccionado
-                            objectIdField.value = initialData[schema.objectIdField] || '';
-                        } catch (error) {
-                            console.error('Error al cargar opciones relacionadas:', error);
-                        }
-                    }
-                }
-            }
-
-        } catch (error) {
-            console.error('Error al cargar el formulario:', error);
         }
     }
 
