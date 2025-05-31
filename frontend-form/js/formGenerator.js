@@ -1295,21 +1295,33 @@ export default class FormGenerator {
             }
 
             if (!value) {
-                return null; // Campo vacío pero no obligatorio
+                return null;
             }
 
-            // Validación específica según el formato del campo
             if (field.format === 'map' || field.format === 'geojson') {
                 try {
-                    // Validar GeoJSON básico
+                    if (!value) return null; // Campo vacío es válido si no es requerido
                     const geoJson = typeof value === 'string' ? JSON.parse(value) : value;
-                    if (!geoJson.type || !geoJson.geometry) {
-                        return 'Formato GeoJSON inválido';
+                    if (geoJson.type === 'MultiPolygon') {
+                        if (!geoJson.coordinates || !Array.isArray(geoJson.coordinates)) {
+                            return 'Formato MultiPolygon inválido';
+                        }
+                        return null; // Es válido
                     }
+                    // También aceptar Polygon (se convertirá a MultiPolygon)
+                    if (geoJson.type === 'Polygon') {
+                        if (!geoJson.coordinates || !Array.isArray(geoJson.coordinates)) {
+                            return 'Formato Polygon inválido';
+                        }
+                        return null;
+                    }
+                    if (geoJson.type === 'FeatureCollection') {
+                        return null; // Es válido
+                    }
+                    return 'Formato GeoJSON inválido - se espera Polygon o MultiPolygon';
                 } catch (e) {
                     return 'Error en formato de datos geográficos';
                 }
-                return null;
             }
 
             if (field.format === 'file' || field.format === 'image') {
@@ -1463,87 +1475,106 @@ export default class FormGenerator {
     /**
      * Obtiene los datos del formulario
      */
-/**
- * Obtiene los datos del formulario con manejo especial para campos JSON
- */
-getFormData() {
-    const formData = {};
-    const properties = this.schema.properties || {};
+    /**
+     * Obtiene los datos del formulario con manejo especial para campos JSON
+     */
+    getFormData() {
+        const formData = {};
+        const properties = this.schema.properties || {};
 
-    for (const key in properties) {
-        const field = properties[key];
-        const input = document.getElementById(key);
+        for (const key in properties) {
+            const field = properties[key];
+            const input = document.getElementById(key);
 
-        if (!input) continue;
+            if (!input) continue;
 
-        let value;
+            let value;
 
-        if (field.type === 'boolean') {
-            // Para campos booleanos, verificar si está marcado
-            if (input.tagName === 'DIV') {
-                // Si es un switch personalizado
-                const checkbox = input.querySelector('input[type="checkbox"]');
-                value = checkbox ? checkbox.checked : false;
-            } else {
-                // Si es un checkbox normal
-                value = input.checked;
-            }
-        } else if (field.format === 'multiselect' || field.isManyToMany) {
-            // Para campos de selección múltiple
-            const selectedOptions = Array.from(input.selectedOptions);
-            value = selectedOptions.map(option => option.value);
-        } else if (field.type === 'number' || field.type === 'integer') {
-            // Convertir a número si el campo no está vacío
-            value = input.value !== '' ? Number(input.value) : null;
-        } else if (field.format === 'map' || key === 'zona_distribucion') {
-            // NUEVO: Manejo especial para campos geoespaciales
-            if (input.value) {
-                try {
-                    // Intentar parsear el JSON para validarlo
-                    const geoJsonData = JSON.parse(input.value);
-
-                    // Verificar si necesitamos enviarlo como objeto o string según el backend
-                    // Tu modelo Django espera JSON en texto, así que lo mantenemos como string
-                    value = input.value; // Mantener como string
-
-                    console.log(`🗺️ Campo geoespacial ${key}:`, {
-                        rawValue: input.value,
-                        parsedValue: geoJsonData,
-                        finalValue: value
-                    });
-
-                } catch (e) {
-                    console.error(`Error parseando JSON geoespacial para ${key}:`, e);
-                    value = input.value; // Usar valor raw si hay error de parsing
-                }
-            } else {
-                value = null;
-            }
-        } else {
-            // Valor normal para otros tipos
-            value = input.value;
-        }
-
-        // Solo añadir al formData si tiene valor o es requerido
-        if (value !== undefined && value !== '' && value !== null) {
-            formData[key] = value;
-        } else if (field.required) {
-            formData[key] = field.type === 'string' ? '' : null;
-        } else if (field.format === 'file' || field.format === 'image') {
-            const fileInput = document.getElementById(key);
-            if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                if (this.options.useFormData) {
-                    formData[key] = fileInput.files;
+            if (field.type === 'boolean') {
+                // Para campos booleanos, verificar si está marcado
+                if (input.tagName === 'DIV') {
+                    // Si es un switch personalizado
+                    const checkbox = input.querySelector('input[type="checkbox"]');
+                    value = checkbox ? checkbox.checked : false;
                 } else {
-                    formData[key] = value;
+                    // Si es un checkbox normal
+                    value = input.checked;
+                }
+            } else if (field.format === 'multiselect' || field.isManyToMany) {
+                // Para campos de selección múltiple
+                const selectedOptions = Array.from(input.selectedOptions);
+                value = selectedOptions.map(option => option.value);
+            } else if (field.type === 'number' || field.type === 'integer') {
+                // Convertir a número si el campo no está vacío
+                value = input.value !== '' ? Number(input.value) : null;
+            } else if (field.format === 'map' || key === 'zona_distribucion') {
+                // 🆕 REEMPLAZAR esta sección completa
+                if (input.value) {
+                    try {
+                        const geoJsonData = JSON.parse(input.value);
+                        // Asegurar formato MultiPolygon si es necesario
+                        if (geoJsonData.type === 'Polygon') {
+                            // Convertir Polygon a MultiPolygon
+                            const multiPolygon = {
+                                type: "MultiPolygon",
+                                coordinates: [geoJsonData.coordinates]
+                            };
+                            value = JSON.stringify(multiPolygon);
+                            console.log('🗺️ Convirtiendo Polygon a MultiPolygon en getFormData');
+                        } else if (geoJsonData.type === 'FeatureCollection' && geoJsonData.features.length > 0) {
+                            // Si es FeatureCollection, extraer la geometría
+                            const feature = geoJsonData.features[0];
+                            if (feature.geometry.type === 'Polygon') {
+                                const multiPolygon = {
+                                    type: "MultiPolygon",
+                                    coordinates: [feature.geometry.coordinates]
+                                };
+                                value = JSON.stringify(multiPolygon);
+                            } else {
+                                value = JSON.stringify(feature.geometry);
+                            }
+                        } else {
+                            value = input.value;
+                        }
+
+                        console.log(`🗺️ Campo geoespacial ${key}:`, {
+                            original: geoJsonData,
+                            final: JSON.parse(value)
+                        });
+
+                    } catch (e) {
+                        console.error(`Error parseando JSON geoespacial para ${key}:`, e);
+                        value = input.value;
+                    }
+                } else {
+                    value = null;
+                }
+            } else {
+                // Valor normal para otros tipos
+                value = input.value;
+            }
+
+            // Solo añadir al formData si tiene valor o es requerido
+            if (value !== undefined && value !== '' && value !== null) {
+                formData[key] = value;
+            } else if (field.required) {
+                formData[key] = field.type === 'string' ? '' : null;
+            } else if (field.format === 'file' || field.format === 'image') {
+                const fileInput = document.getElementById(key);
+                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                    if (this.options.useFormData) {
+                        formData[key] = fileInput.files;
+                    } else {
+                        formData[key] = value;
+                    }
                 }
             }
         }
+
+        console.log('📋 Form data procesado:', formData);
+        return formData;
     }
 
-    console.log('📋 Form data procesado:', formData);
-    return formData;
-}
     /**
      * Maneja errores devueltos por la API
      */
@@ -2350,7 +2381,26 @@ getFormData() {
 
         function updateHiddenInput() {
             const geoJson = drawnItems.toGeoJSON();
-            hiddenInput.value = JSON.stringify(geoJson);
+            if (geoJson.features && geoJson.features.length > 0) {
+                const feature = geoJson.features[0];
+                if (feature.geometry) {
+                    if (feature.geometry.type === 'Polygon') {
+                        // Convertir Polygon a MultiPolygon
+                        const multiPolygon = {
+                            type: "MultiPolygon",
+                            coordinates: [feature.geometry.coordinates]
+                        };
+                        hiddenInput.value = JSON.stringify(multiPolygon);
+                        console.log('🗺️ Polígono convertido a MultiPolygon:', multiPolygon);
+                    } else if (feature.geometry.type === 'MultiPolygon') {
+                        hiddenInput.value = JSON.stringify(feature.geometry);
+                    } else {
+                        hiddenInput.value = JSON.stringify(geoJson);
+                    }
+                }
+            } else {
+                hiddenInput.value = '';
+            }
             hiddenInput.dispatchEvent(new Event('change'));
         }
 

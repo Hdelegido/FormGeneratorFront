@@ -540,7 +540,6 @@
                 </div>
             </div>
 
-            <!-- Selector de colores del tema -->
             <div class="form-group">
                 <label>Colores del tema:</label>
                 <div class="color-pickers">
@@ -562,7 +561,6 @@
         </div>
     </div>
 
-    <!-- 📑 Llistat de dades -->
     <div class="card">
         <h2><i class="fas fa-database"></i> Navegador de dades</h2>
 
@@ -604,7 +602,6 @@
     let currentModel = '';
     let loadedItems = [];
 
-    // Utilidades
     const $ = selector => document.querySelector(selector);
 
     /**
@@ -618,12 +615,10 @@
             return savedTheme;
         }
 
-        // Si no hay tema guardado, usar preferencia del sistema
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             return 'dark';
         }
 
-        // Por defecto, usar tema claro
         return 'light';
     }
 
@@ -706,18 +701,16 @@
                 editId: id,
                 theme: getPreferredTheme(),
 
-                // ✅ CONFIGURACIÓN CORRECTA DE API
                 apiConfig: {
                     baseUrl: API_BASE_URL, // Esto es clave
                     headers: {
                         'Content-Type': 'application/json',
                     }
-                    // Los endpoints se construirán automáticamente con la baseUrl correcta
                 },
 
                 options: {
                     showThemeToggle: true,
-                    debug: true // Mantener debug activo
+                    debug: true
                 },
 
                 onSubmitSuccess: (result) => {
@@ -754,6 +747,20 @@
             currentForm.renderForm();
             updateFormTitle(model, editMode, id);
             setupPolymorphicFields();
+            setTimeout(() => {
+                const mapContainers = document.querySelectorAll('.map-field-container');
+                mapContainers.forEach(container => {
+                    const mapElement = container.querySelector('.leaflet-map');
+                    if (mapElement && mapElement.id) {
+                        const mapId = mapElement.id;
+                        if (window.mapInstances && window.mapInstances[mapId]) {
+                            console.log(`🗺️ Forzando actualización del mapa: ${mapId}`);
+                            window.mapInstances[mapId].invalidateSize();
+                        }
+                    }
+                });
+            }, 500);
+
 
             // Resto del código para campos polimórficos...
             if (schema.isPolymorphic) {
@@ -891,17 +898,13 @@
         `;
 
             dataList.appendChild(div);
-
-            // Eventos
             div.querySelector('.editBtn').addEventListener('click', async () => {
                 try {
                     const obj = await apiRequest(`http://localhost:8000/api/get/${model}/${item.id}/`);
                     loadForm(model, true, item.id, obj);
 
-                    // Actualizamos el selector de modelo
                     $('#modelSelect').value = model;
 
-                    // Hacemos scroll al formulario
                     $('#formTitle').scrollIntoView({behavior: 'smooth'});
                 } catch (error) {
                     console.error('Error al cargar el elemento:', error);
@@ -1178,6 +1181,8 @@
         reader.readAsText(file);
     });
 
+    // 🎨 REEMPLAZAR la función del botón de aplicar colores en tu index.html
+
     // Botón para aplicar colores personalizados
     $('#applyColorsBtn').addEventListener('click', function () {
         if (!currentForm) {
@@ -1188,16 +1193,82 @@
         const primaryColor = $('#primaryColor').value;
         const errorColor = $('#errorColor').value;
 
-        // Aplicar tema personalizado
+        console.log('🎨 Aplicando colores:', {primaryColor, errorColor});
+
+        // 🔧 MÉTODO 1: Aplicar directamente al formulario generado
+        const generatedForm = document.querySelector('.generated-form');
+        if (generatedForm) {
+            // Aplicar variables CSS directamente
+            generatedForm.style.setProperty('--primary-color', primaryColor);
+            generatedForm.style.setProperty('--error-color', errorColor);
+
+            // También actualizar algunas variables relacionadas
+            const primaryDark = darkenColor(primaryColor, 10); // Función helper
+            generatedForm.style.setProperty('--primary-dark', primaryDark);
+
+            console.log('✅ Colores aplicados directamente al formulario');
+        }
+
+        // 🔧 MÉTODO 2: Usar el método interno de FormGenerator
         currentForm.applyCustomTheme({
             primaryColor: primaryColor,
             errorColor: errorColor
         });
 
+        // 🔧 MÉTODO 3: Aplicar también a elementos específicos
+        applyColorsToElements(primaryColor, errorColor);
+
         showToast('Colores aplicados correctamente', 'success');
     });
 
-    // Función para aplicar estilos predefinidos
+    // 🎨 FUNCIÓN HELPER: Oscurecer color
+    function darkenColor(color, percent) {
+        const num = parseInt(color.replace("#", ""), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) - amt;
+        const G = (num >> 8 & 0x00FF) - amt;
+        const B = (num & 0x0000FF) - amt;
+        return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+            (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+            (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+    }
+
+    // 🎨 FUNCIÓN: Aplicar colores a elementos específicos
+    function applyColorsToElements(primaryColor, errorColor) {
+        // Iconos de campo
+        const fieldIcons = document.querySelectorAll('.generated-form .field-icon');
+        fieldIcons.forEach(icon => {
+            icon.style.color = primaryColor;
+        });
+
+        const submitBtn = document.querySelector('.generated-form .submit-btn');
+        if (submitBtn) {
+            submitBtn.style.backgroundColor = primaryColor;
+            submitBtn.style.borderColor = primaryColor;
+        }
+
+        const inputs = document.querySelectorAll('.generated-form input, .generated-form select, .generated-form textarea');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function () {
+                this.style.borderColor = primaryColor;
+                this.style.boxShadow = `0 0 0 3px ${primaryColor}30`;
+            });
+        });
+
+        const asterisks = document.querySelectorAll('.generated-form .required-asterisk');
+        asterisks.forEach(asterisk => {
+            asterisk.style.color = errorColor;
+        });
+
+        // Mensajes de error
+        const errorDivs = document.querySelectorAll('.generated-form .field-error');
+        errorDivs.forEach(errorDiv => {
+            errorDiv.style.color = errorColor;
+        });
+
+        console.log('🎨 Colores aplicados a elementos específicos');
+    }
+
     function applyPredefinedStyle(styleName) {
         if (!currentForm) return;
 
@@ -1330,8 +1401,6 @@
                 }
             }
         };
-
-        // Aplicar el estilo seleccionado
         if (styles[styleName]) {
             currentForm.applyCustomStyles(styles[styleName]);
             showToast(`Estilo "${styleName}" aplicado correctamente`, 'success');

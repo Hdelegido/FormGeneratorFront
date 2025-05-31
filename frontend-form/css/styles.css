@@ -481,12 +481,10 @@ input:checked + .slider:before {
         transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
     }
 
-    /* Clase para mostrar/ocultar elementos */
     .mt-2 {
         margin-top: 0.5rem;
     }
 
-    /* Estilos para campos de mapa geoespaciales */
     .map-field-container {
         width: 100%;
         position: relative;
@@ -617,5 +615,191 @@ input:checked + .slider:before {
     /* Estilo para campos de mapa en grupos */
     .field-group .map-field-container {
         grid-column: 1 / -1; /* Ocupa todo el ancho disponible */
+    }
+
+    /* 🎨 VARIABLES CSS PARA TEMAS DE COLOR - AÑADIR AL FINAL DE styles.css */
+    /* Variables CSS por defecto para FormGenerator */
+    :root {
+        /* Variables del tema principal */
+        --primary: #4361ee;
+        --primary-dark: #3a56d4;
+        --secondary: #7209b7;
+        --success: #2ecc71;
+        --danger: #e74c3c;
+        --warning: #f39c12;
+        --light: #f8f9fa;
+        --dark: #212529;
+        --gray: #6c757d;
+        --gray-light: #e9ecef;
+        --border-radius: 8px;
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+
+    /* 🔧 VARIABLES ESPECÍFICAS PARA FORMGENERATOR */
+    .generated-form {
+        /* Variables que usa FormGenerator internamente */
+        --bg-color: #ffffff;
+        --text-color: #212529;
+        --border-color: #ced4da;
+        --input-bg: #ffffff;
+        --primary-color: var(--primary);
+        --error-color: var(--danger);
+        --group-bg: #f8f9fa;
+        --help-text-color: #6c757d;
+    }
+
+    /* 🎨 ESTILOS QUE USAN LAS VARIABLES DE COLOR */
+    /* Iconos de campo */
+    .generated-form .field-icon {
+        color: var(--primary-color) !important;
+        opacity: 0.8;
+    }
+
+    /* Botones del formulario */
+    .generated-form .submit-btn {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+
+    .generated-form .submit-btn:hover {
+        background-color: var(--primary-dark, #3a56d4) !important;
+        border-color: var(--primary-dark, #3a56d4) !important;
+    }
+
+    /* Campos con focus */
+    .generated-form input:focus,
+    .generated-form select:focus,
+    .generated-form textarea:focus {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15) !important;
+    }
+
+    /* Labels y texto */
+    .generated-form label {
+        color: var(--text-color);
+    }
+
+    .generated-form .form-group label .field-icon {
+        color: var(--primary-color) !important;
+    }
+
+    .generated-form .field-error {
+        color: var(--error-color) !important;
+    }
+
+    .generated-form .required-asterisk {
+        color: var(--error-color) !important;
+    }
+
+    .generated-form input.invalid-input,
+    .generated-form select.invalid-input,
+    .generated-form textarea.invalid-input {
+        border-color: var(--error-color) !important;
+        background-color: rgba(231, 76, 60, 0.05) !important;
+    }
+
+    .generated-form .theme-toggle-btn {
+        color: var(--text-color);
+    }
+
+    .generated-form .theme-toggle-btn:hover {
+        background-color: var(--gray-light);
+        color: var(--primary-color) !important;
+    }
+
+    .generated-form .group-header {
+        background-color: var(--group-bg);
+        border-left-color: var(--group-accent-color, var(--primary-color)) !important;
+    }
+
+    .generated-form .group-header h4 {
+        color: var(--group-accent-color, var(--primary-color)) !important;
+    }
+
+    /* Indicadores de dependencia */
+    .generated-form .dependency-indicator {
+        color: var(--primary-color) !important;
+    }
+
+    /* Campos especiales */
+    .generated-form .content-type-selector {
+        border-color: var(--primary-color) !important;
+        background-color: rgba(67, 97, 238, 0.05) !important;
+    }
+
+    .generated-form .dependent-field {
+        border-color: var(--secondary) !important;
+        background-color: rgba(114, 9, 183, 0.05) !important;
+    }
+
+    /* Controles de mapa */
+    .generated-form .map-controls-buttons .btn-primary {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+
+    .generated-form .map-controls-buttons .btn-primary:hover {
+        background-color: var(--primary-dark, #3a56d4) !important;
+        border-color: var(--primary-dark, #3a56d4) !important;
+    }
+
+    /* Texto de ayuda */
+    .generated-form .field-help-text {
+        color: var(--help-text-color);
+    }
+
+    /* 🌙 TEMA OSCURO */
+    .generated-form.theme-dark {
+        --bg-color: #212529;
+        --text-color: #f8f9fa;
+        --border-color: #495057;
+        --input-bg: #343a40;
+        --primary-color: #4cc9f0;
+        --error-color: #e5383b;
+        --group-bg: #343a40;
+        --help-text-color: #adb5bd;
+    }
+
+    .generated-form.theme-dark input,
+    .generated-form.theme-dark select,
+    .generated-form.theme-dark textarea {
+        background-color: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    .generated-form.theme-dark .form-group {
+        background-color: var(--bg-color);
+    }
+
+    .color-picker input[type="color"] {
+        width: 50px !important;
+        height: 35px !important;
+        padding: 2px !important;
+        border: 2px solid var(--gray-light) !important;
+        border-radius: var(--border-radius) !important;
+        cursor: pointer !important;
+        transition: var(--transition) !important;
+    }
+
+    .color-picker input[type="color"]:hover {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15) !important;
+    }
+
+    #applyColorsBtn {
+        background: linear-gradient(45deg, var(--primary), var(--secondary)) !important;
+        border: none !important;
+        color: white !important;
+        padding: 8px 16px !important;
+        border-radius: var(--border-radius) !important;
+        font-weight: 600 !important;
+        transition: var(--transition) !important;
+    }
+
+    #applyColorsBtn:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3) !important;
     }
 }
