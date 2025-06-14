@@ -78,53 +78,32 @@ export default class FormGenerator {
      * Realiza peticiones API o usa callbacks según configuración
      */
     async apiRequest(action, options = {}) {
-        // Debug mejorado
-        console.log(`🔧 FormGenerator Debug:`);
-        console.log(`   Action: ${action}`);
-        console.log(`   Options:`, options);
-        console.log(`   URL construida: ${options.url}`);
-        console.log(`   Method: ${options.method || 'GET'}`);
-        console.log(`   Data:`, options.data);
 
-        // Si hay callback definido para esta acción, usarlo
         if (this.callbacks[action] && typeof this.callbacks[action] === 'function') {
-            if (this.options.debug) {
-                console.log(`FormGenerator: Usando callback para ${action}`);
-            }
             return await this.callbacks[action](options.data, options.params);
         }
 
-        // Si no hay callback, usar fetch con la API configurada
         try {
-            if (this.options.debug) {
-                console.log(`FormGenerator: Petición API ${action} a ${options.url}`);
-            }
-
             const response = await fetch(options.url, {
                 method: options.method || 'GET',
                 headers: this.apiConfig.headers,
                 body: options.data ? JSON.stringify(options.data) : undefined
             });
 
-            console.log(`📡 Response status: ${response.status}`);
-            console.log(`📡 Response headers:`, response.headers);
 
             if (!response.ok) {
                 const responseText = await response.text();
                 console.error(`❌ Response error text:`, responseText);
 
-                // Intentar parsear como JSON, si no, usar el texto completo
                 try {
                     const errorData = JSON.parse(responseText);
                     console.error(`❌ Parsed error data:`, errorData);
 
-                    // Manejar diferentes formatos de error
                     let errorMessage = 'Error en la petición';
 
                     if (typeof errorData.error === 'string') {
                         errorMessage = errorData.error;
                     } else if (typeof errorData.error === 'object') {
-                        // Si es un objeto con errores por campo
                         errorMessage = Object.entries(errorData.error)
                             .map(([field, msg]) => `${field}: ${Array.isArray(msg) ? msg.join(', ') : msg}`)
                             .join('; ');
@@ -142,7 +121,6 @@ export default class FormGenerator {
             }
 
             const result = await response.json();
-            console.log(`✅ Response success:`, result);
             return result;
 
         } catch (error) {
@@ -294,10 +272,6 @@ export default class FormGenerator {
             }
         }
 
-        // Verificar si este es un modelo polimórfico
-        if (this.schema.isPolymorphic) {
-            console.log('Modelo polimórfico detectado:', this.schema.polymorphicField);
-        }
     }
 
     /**
@@ -310,11 +284,7 @@ export default class FormGenerator {
             selectField.disabled = true;
             selectField.innerHTML = '<option value="">Cargando...</option>';
 
-            if (this.options.debug) {
-                console.log(`FormGenerator: Cargando objetos para content_type ${contentTypeId}`);
-            }
 
-            // NUEVO: Usar el método apiRequest en vez de fetch directo
             const url = this.apiConfig.endpoints.getContentTypeObjects(contentTypeId);
             const objects = await this.apiRequest('loadContentTypeObjects', {
                 url,
@@ -447,10 +417,8 @@ export default class FormGenerator {
         let contentTypeField = schema.contentTypeField || null;
         let objectIdField = schema.objectIdField || null;
 
-        // Si es polimórfico, añadir una clase al grid
         if (isPolymorphic) {
             grid.classList.add('polymorphic-form');
-            console.log(`Formulario polimórfico detectado: ${contentTypeField} -> ${objectIdField}`);
         }
 
         for (const key in properties) {
@@ -462,12 +430,10 @@ export default class FormGenerator {
             const group = document.createElement('div');
             group.classList.add('form-group');
 
-            // Añadir clases según tipo de campo para estilizado flexible
             if (field.type) {
                 group.classList.add(`field-type-${field.type}`);
             }
 
-            // Clases especiales para campos polimórficos
             if (isPolymorphic && (key === contentTypeField || key === objectIdField)) {
                 group.classList.add('polymorphic-field');
 
@@ -478,7 +444,6 @@ export default class FormGenerator {
                 if (key === objectIdField) {
                     group.classList.add('object-id-field');
 
-                    // Si aún no hay content_type seleccionado, ocultar este campo
                     if (!this.initialData[contentTypeField]) {
                         group.classList.add('initially-hidden');
                     }
@@ -529,7 +494,6 @@ export default class FormGenerator {
                 }
             }
 
-            // Crear etiqueta con icono y texto
             label.innerHTML = `
         <i class="fas ${iconClass} field-icon"></i>
         <span>${field.title || this.humanizeFieldName(key)}</span>
@@ -538,21 +502,17 @@ export default class FormGenerator {
 
             group.appendChild(label);
 
-            // Crear el input según el tipo
             let input;
 
-            // Determinar el tipo de campo según schema
             if (field.format === 'multiselect' || field.isManyToMany) {
                 input = this.createMultiselectField(key, field, value);
             } else if (this.isSelectField(field)) {
                 input = this.createSelectField(key, field, value);
 
-                // Si es un campo content_type, añadimos clase especial
                 if (field.isContentTypeField) {
                     input.classList.add('content-type-selector');
                 }
 
-                // Si es un campo que depende de otro, añadimos clase especial
                 if (field.dependsOn) {
                     input.classList.add('dependent-field');
                     input.dataset.dependsOn = field.dependsOn;
@@ -580,7 +540,7 @@ export default class FormGenerator {
                 input.name = key;
                 input.dataset.field = key;
 
-                if (isRequired && input.tagName !== 'DIV') { // No aplicar required a contenedores
+                if (isRequired && input.tagName !== 'DIV') {
                     input.required = true;
                 }
 
@@ -588,18 +548,15 @@ export default class FormGenerator {
                     input.title = field.description;
                 }
 
-                // Aplicar eventos de validación (excepto en switches y multiselect)
                 if (input.tagName !== 'DIV' && !input.multiple) {
                     input.addEventListener('input', () => this.validateField(key, input.value));
                     input.addEventListener('blur', () => this.validateField(key, input.value, true));
                 }
             }
 
-            // Contenedor para input y posibles elementos auxiliares
             const inputContainer = document.createElement('div');
             inputContainer.className = 'input-container';
 
-            // Si es un campo dependiente, añadimos indicador
             if (field.dependsOn) {
                 inputContainer.classList.add('dependent-container');
 
@@ -613,7 +570,6 @@ export default class FormGenerator {
 
             inputContainer.appendChild(input);
 
-            // Añadir botón de limpiar para campos simples (no para multiselect o switch)
             if (input.tagName === 'INPUT' && ['text', 'email', 'number'].includes(input.type)) {
                 const clearBtn = document.createElement('button');
                 clearBtn.type = 'button';
@@ -630,13 +586,11 @@ export default class FormGenerator {
 
             group.appendChild(inputContainer);
 
-            // Mensaje de error
             const errorDiv = document.createElement('div');
             errorDiv.className = 'field-error hidden';
             errorDiv.id = `error-${key}`;
             group.appendChild(errorDiv);
 
-            // Texto de ayuda para el campo
             if (field.description) {
                 const helpText = document.createElement('div');
                 helpText.className = 'field-help-text';
@@ -644,7 +598,6 @@ export default class FormGenerator {
                 group.appendChild(helpText);
             }
 
-            // Para multiselect, añadimos una ayuda adicional
             if (field.format === 'multiselect' || field.isManyToMany) {
                 const multiSelectHelp = document.createElement('div');
                 multiSelectHelp.className = 'field-help-text';
@@ -811,7 +764,6 @@ export default class FormGenerator {
     buildField(fieldName, fieldSchema, value, container, requiredFields = []) {
         const isRequired = requiredFields.includes(fieldName);
 
-        // Crear contenedor para el grupo de formulario
         const group = document.createElement('div');
         group.classList.add('form-group');
         group.dataset.field = fieldName; // Para facilitar la selección por campo
@@ -830,17 +782,14 @@ export default class FormGenerator {
             group.classList.add('field-required');
         }
 
-        // Si el campo tiene dependencias, marcarlo
         if (fieldSchema.dependsOn) {
             group.classList.add('field-dependent');
             group.dataset.dependsOn = fieldSchema.dependsOn;
         }
 
-        // Crear label con icono apropiado
         const label = this.createFieldLabel(fieldName, fieldSchema, isRequired);
         group.appendChild(label);
 
-        // Crear el input según el tipo específico detectado
         let input;
 
         switch (fieldType) {
@@ -884,18 +833,14 @@ export default class FormGenerator {
                 input = this.createPasswordField(fieldName, fieldSchema, value);
                 break;
             default:
-                // Intentar usar un widget personalizado si está registrado
                 if (this.customWidgets && this.customWidgets[fieldType]) {
                     input = this.customWidgets[fieldType](fieldName, fieldSchema, value, this);
                 } else {
-                    // Por defecto, crear un campo de texto
                     input = this.createTextField(fieldName, fieldSchema, value);
                 }
         }
 
-        // Configurar atributos comunes para el input
         if (input) {
-            // ID y nombre para el campo (excepto en contenedores complejos)
             if (input.tagName !== 'DIV' || !input.querySelector('input, select, textarea')) {
                 input.id = fieldName;
                 input.name = fieldName;
@@ -1215,20 +1160,17 @@ export default class FormGenerator {
             const isValid = this.validateAllFields();
 
             if (!isValid) {
-                console.log('Formulario inválido, no se envía');
                 return;
             }
 
             try {
                 const formData = this.getFormData();
-                console.log('Datos del formulario a enviar:', formData);
 
                 submitButton.disabled = true;
                 submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
                 let result;
 
-                // NUEVO: Usar apiRequest con callbacks o API configurada
                 if (this.editMode) {
                     const url = this.apiConfig.endpoints.update(this.model, this.editId);
                     result = await this.apiRequest('updateObject', {
@@ -1247,7 +1189,6 @@ export default class FormGenerator {
                     });
                 }
 
-                console.log('Respuesta del servidor:', result);
 
                 if (this.onSubmitSuccess && typeof this.onSubmitSuccess === 'function') {
                     this.onSubmitSuccess(result);
@@ -1508,21 +1449,16 @@ export default class FormGenerator {
                 // Convertir a número si el campo no está vacío
                 value = input.value !== '' ? Number(input.value) : null;
             } else if (field.format === 'map' || key === 'zona_distribucion') {
-                // 🆕 REEMPLAZAR esta sección completa
                 if (input.value) {
                     try {
                         const geoJsonData = JSON.parse(input.value);
-                        // Asegurar formato MultiPolygon si es necesario
                         if (geoJsonData.type === 'Polygon') {
-                            // Convertir Polygon a MultiPolygon
                             const multiPolygon = {
                                 type: "MultiPolygon",
                                 coordinates: [geoJsonData.coordinates]
                             };
                             value = JSON.stringify(multiPolygon);
-                            console.log('🗺️ Convirtiendo Polygon a MultiPolygon en getFormData');
                         } else if (geoJsonData.type === 'FeatureCollection' && geoJsonData.features.length > 0) {
-                            // Si es FeatureCollection, extraer la geometría
                             const feature = geoJsonData.features[0];
                             if (feature.geometry.type === 'Polygon') {
                                 const multiPolygon = {
@@ -1537,11 +1473,6 @@ export default class FormGenerator {
                             value = input.value;
                         }
 
-                        console.log(`🗺️ Campo geoespacial ${key}:`, {
-                            original: geoJsonData,
-                            final: JSON.parse(value)
-                        });
-
                     } catch (e) {
                         console.error(`Error parseando JSON geoespacial para ${key}:`, e);
                         value = input.value;
@@ -1550,11 +1481,9 @@ export default class FormGenerator {
                     value = null;
                 }
             } else {
-                // Valor normal para otros tipos
                 value = input.value;
             }
 
-            // Solo añadir al formData si tiene valor o es requerido
             if (value !== undefined && value !== '' && value !== null) {
                 formData[key] = value;
             } else if (field.required) {
@@ -1571,7 +1500,6 @@ export default class FormGenerator {
             }
         }
 
-        console.log('📋 Form data procesado:', formData);
         return formData;
     }
 
@@ -1964,17 +1892,11 @@ export default class FormGenerator {
      */
     async loadStylesFromFile(url) {
         try {
-            // Verificar que la URL sea válida
             if (!url) {
                 throw new Error('URL no válida para cargar estilos');
             }
 
-            // Mostrar indicador de carga si tienes uno
-            if (this.options && this.options.debug) {
-                console.log(`Cargando estilos desde: ${url}`);
-            }
 
-            // Realizar la petición para obtener el archivo CSS
             const response = await fetch(url);
 
             // Verificar si la respuesta es correcta
@@ -1982,15 +1904,10 @@ export default class FormGenerator {
                 throw new Error(`Error al cargar estilos: ${response.status} ${response.statusText}`);
             }
 
-            // Obtener el contenido del archivo como texto
             const cssText = await response.text();
 
-            // Aplicar los estilos cargados
             this.applyCustomStyles(cssText);
 
-            if (this.options && this.options.debug) {
-                console.log('Estilos aplicados correctamente');
-            }
 
             return true;
         } catch (error) {
@@ -2017,20 +1934,16 @@ export default class FormGenerator {
     applyCustomStyles(styles) {
         if (!styles) return;
 
-        // Generar ID único para este conjunto de estilos
         const styleId = `form-generator-styles-${this.model}`;
 
-        // Eliminar estilos anteriores si existen
         const existingStyles = document.getElementById(styleId);
         if (existingStyles) {
             existingStyles.remove();
         }
 
-        // Crear nuevo elemento de estilo
         const styleElement = document.createElement('style');
         styleElement.id = styleId;
 
-        // Convertir objeto a CSS si es necesario
         let cssContent = '';
 
         if (typeof styles === 'string') {
@@ -2042,21 +1955,14 @@ export default class FormGenerator {
             return;
         }
 
-        // Añadir prefijo al ámbito para evitar colisiones
         cssContent = this.scopeCSS(cssContent, `.form-${this.model}`);
 
-        // Añadir el CSS al elemento style
         styleElement.textContent = cssContent;
 
-        // Añadir al head del documento
         document.head.appendChild(styleElement);
 
-        // Guardar referencia a los estilos actuales
         this.customStyles = styles;
 
-        if (this.options && this.options.debug) {
-            console.log('Estilos personalizados aplicados');
-        }
     }
 
     /**
@@ -2344,7 +2250,6 @@ export default class FormGenerator {
                 window.mapInstances[mapId].remove();
                 delete window.mapInstances[mapId];
             }
-            // Limpiar el atributo de Leaflet
             delete mapElement._leaflet_id;
         }
 
@@ -2385,13 +2290,11 @@ export default class FormGenerator {
                 const feature = geoJson.features[0];
                 if (feature.geometry) {
                     if (feature.geometry.type === 'Polygon') {
-                        // Convertir Polygon a MultiPolygon
                         const multiPolygon = {
                             type: "MultiPolygon",
                             coordinates: [feature.geometry.coordinates]
                         };
                         hiddenInput.value = JSON.stringify(multiPolygon);
-                        console.log('🗺️ Polígono convertido a MultiPolygon:', multiPolygon);
                     } else if (feature.geometry.type === 'MultiPolygon') {
                         hiddenInput.value = JSON.stringify(feature.geometry);
                     } else {

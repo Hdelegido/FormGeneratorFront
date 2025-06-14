@@ -6,26 +6,118 @@
   "main": "frontend-form/js/index.js",
   "files": [
     "frontend-form/js",
-    "frontend-form/css"
+    "frontend-form/css",
+    "dist"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npx http-server -o frontend-form/index.html",
-    "build": "rollup -c && copyfiles -f frontend-form/css/styles.css dist"
+    "build": "rollup -c && copyfiles -f frontend-form/css/styles.css dist",
+    "dev": "http-server frontend-form -p 3000 -c-1",
+    "preview": "npm run dev",
+    "serve:test": "http-server frontend-form -p 3000 -c-1 --silent",
+
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch",
+
+    "test:unit": "vitest run tests/unit/",
+    "test:integration": "vitest run tests/integration/",
+    "test:performance": "vitest run tests/performance/",
+    "test:validation": "vitest run tests/validation/",
+    "test:error-handling": "vitest run tests/error-handling/",
+    "test:api-integration": "vitest run tests/api-integration/",
+
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:basic": "playwright test tests/e2e/basic-flow.spec.js",
+    "test:accessibility": "playwright test tests/e2e/accessibility-basic.spec.js",
+    "test:setup": "playwright install",
+
+    "test:backend": "npm run test:validation && npm run test:error-handling && npm run test:api-integration",
+    "test:frontend": "npm run test:unit && npm run test:integration",
+    "test:quick": "npm run test:unit && npm run test:integration",
+    "test:all": "npm run test:run && npm run test:e2e",
+    "test:comprehensive": "./run-all-tests.sh",
+    "test:ci": "npm run test:coverage && npm run test:e2e:basic",
+    "test:debug": "vitest --ui",
+
+    "reports:open": "open test-reports/summary.html || echo 'Ejecutar primero test:comprehensive'",
+    "reports:coverage": "open coverage/index.html || echo 'Ejecutar primero test:coverage'",
+    "reports:e2e": "open playwright-report/index.html || echo 'Ejecutar primero test:e2e'",
+    "reports:serve": "python3 -m http.server 8080",
+
+    "validate": "npm run test:quick",
+    "lint": "echo 'Linting pendiente de configurar'",
+    "clean": "rm -rf dist/ coverage/ test-results/ playwright-report/ test-reports/",
+    "clean:tests": "rm -rf coverage/ test-results/ playwright-report/ test-reports/",
+    "demo": "npm run dev"
   },
   "keywords": [
     "form",
     "generator",
     "dynamic",
     "schema",
-    "json-schema"
+    "json-schema",
+    "testing",
+    "validation",
+    "tfg",
+    "django-integration",
+    "frontend",
+    "javascript"
   ],
   "author": "Hector del Egido Gonzalez",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hdelegido/FormGenerator.git"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.52.0",
     "@rollup/plugin-terser": "^0.4.4",
+    "@vitest/coverage-v8": "^3.2.0",
+    "@vitest/ui": "^3.2.0",
     "copyfiles": "^2.4.1",
+    "happy-dom": "^17.5.6",
+    "http-server": "^14.1.1",
+    "jsdom": "^26.1.0",
     "live-server": "^1.2.2",
-    "rollup": "^2.79.2"
+    "rollup": "^2.79.2",
+    "vitest": "^3.2.0"
+  },
+  "vitest": {
+    "environment": "jsdom",
+    "globals": true,
+    "setupFiles": ["tests/setup.js"],
+    "coverage": {
+      "provider": "v8",
+      "reporter": ["text", "html", "lcov", "json"],
+      "reportsDirectory": "coverage",
+      "include": [
+        "frontend-form/js/**/*.js"
+      ],
+      "exclude": [
+        "tests/**",
+        "dist/**",
+        "node_modules/**",
+        "**/*.test.js",
+        "**/*.spec.js"
+      ],
+      "thresholds": {
+        "global": {
+          "branches": 30,
+          "functions": 35,
+          "lines": 30,
+          "statements": 30
+        }
+      }
+    }
   }
 }

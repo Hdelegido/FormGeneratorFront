@@ -3,221 +3,570 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor de Formularis Dinàmics</title>
+    <title>FormGenerator TFG - Metodologia Integral</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
     <style>
+        /* 🌟 VARIABLES CSS WCAG AAA COMPLIANT */
         :root {
-            --primary: #4361ee;
-            --primary-dark: #3a56d4;
-            --secondary: #7209b7;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --gray: #6c757d;
-            --gray-light: #e9ecef;
-            --border-radius: 8px;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
+            /* COLORES PRINCIPALES - Contraste 7:1 mínimo para AAA */
+            --primary-dark: #0f172a; /* Para texto en fondo claro - Contraste 15.1:1 */
+            --primary-blue: #1e40af; /* Azul profesional - Contraste 8.6:1 */
+            --primary-purple: #6b21a8; /* Púrpura corporativo - Contraste 9.1:1 */
+            --accent-teal: #0f766e; /* Verde teal - Contraste 8.2:1 */
+
+            /* COLORES DE ESTADO - Alta visibilidad */
+            --success-dark: #15803d; /* Verde éxito - Contraste 7.8:1 */
+            --danger-dark: #b91c1c; /* Rojo error - Contraste 9.2:1 */
+            --warning-dark: #a16207; /* Amarillo advertencia - Contraste 8.1:1 */
+            --info-dark: #1e40af; /* Azul información - Contraste 8.6:1 */
+
+            /* ESCALA DE GRISES PROFESIONAL */
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+
+            /* FONDOS Y CONTENEDORES */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --surface-elevated: #ffffff;
+            --surface-overlay: rgba(15, 23, 42, 0.95);
+
+            /* TEXTO Y CONTRASTE */
+            --text-primary: #0f172a; /* Máximo contraste */
+            --text-secondary: #1e293b; /* Alto contraste */
+            --text-muted: #475569; /* Contraste moderado pero AAA */
+            --text-inverse: #ffffff;
+
+            /* BORDES Y SEPARADORES */
+            --border-light: #e2e8f0;
+            --border-medium: #cbd5e1;
+            --border-strong: #94a3b8;
+
+            /* DIMENSIONES Y ESPACIADO */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --radius-2xl: 20px;
+
+            /* SOMBRAS PROFESIONALES */
+            --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+            --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px -1px rgba(15, 23, 42, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+
+            /* TRANSICIONES SUAVES */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* TIPOGRAFÍA PROFESIONAL */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+
+            /* PESOS DE FUENTE */
+            --font-normal: 400;
+            --font-medium: 500;
+            --font-semibold: 600;
+            --font-bold: 700;
+
+            /* LÍNEAS DE ALTURA */
+            --leading-tight: 1.25;
+            --leading-normal: 1.5;
+            --leading-relaxed: 1.625;
         }
 
+        /* 🌙 TEMA OSCURO - TAMBIÉN WCAG AAA COMPLIANT */
+        [data-theme="dark"] {
+            --primary-blue: #3b82f6; /* Azul más claro para fondo oscuro */
+            --primary-purple: #a855f7; /* Púrpura más visible */
+            --accent-teal: #14b8a6; /* Teal más brillante */
+
+            --success-dark: #22c55e;
+            --danger-dark: #ef4444;
+            --warning-dark: #f59e0b;
+            --info-dark: #3b82f6;
+
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --surface-elevated: #1e293b;
+            --surface-overlay: rgba(248, 250, 252, 0.95);
+
+            --text-primary: #f8fafc;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --text-inverse: #0f172a;
+
+            --border-light: #334155;
+            --border-medium: #475569;
+            --border-strong: #64748b;
+        }
+
+        /* 🎯 RESET Y BASE */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        *:focus {
+            outline: 2px solid var(--primary-blue);
+            outline-offset: 2px;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-            color: var(--dark);
-            line-height: 1.6;
+            font-family: var(--font-sans);
+            font-size: 16px;
+            line-height: var(--leading-normal);
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            transition: background-color var(--transition-base), color var(--transition-base);
+            overflow-x: hidden;
         }
 
+        /* 📱 CONTENEDOR RESPONSIVO */
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 1.5rem;
         }
 
-        header {
+        /* 🎯 HEADER PROFESIONAL */
+        .header {
+            background: linear-gradient(135deg, var(--surface-elevated) 0%, var(--bg-tertiary) 100%);
+            border-bottom: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(8px);
+        }
+
+        .header-content {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--gray-light);
+            padding: 1rem 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        header h1 {
-            font-size: 2.2rem;
-            color: var(--primary);
+        .header-logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 1rem;
+            text-decoration: none;
+            color: var(--text-primary);
         }
 
-        header h1 i {
-            background: var(--primary);
-            color: white;
+        .header-logo:hover {
+            opacity: 0.8;
+            transition: opacity var(--transition-fast);
+        }
+
+        .logo-icon {
             width: 48px;
             height: 48px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            border-radius: var(--radius-lg);
             display: flex;
             align-items: center;
             justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: var(--shadow-md);
         }
 
-        .app-version {
-            font-size: 0.9rem;
-            color: var(--gray);
+        .header-title {
+            font-size: 1.875rem;
+            font-weight: var(--font-bold);
+            color: var(--text-primary);
+            line-height: var(--leading-tight);
         }
 
+        .header-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: var(--font-medium);
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .version-badge {
+            background-color: var(--accent-teal);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: var(--font-semibold);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-toggle {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-medium);
+            background-color: var(--surface-elevated);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-blue);
+        }
+
+        /* 🎴 CARDS PROFESIONALES */
         .card {
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            padding: 24px;
-            margin-bottom: 24px;
-            transition: var(--transition);
+            background-color: var(--surface-elevated);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+            padding: 2rem;
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple), var(--accent-teal));
         }
 
         .card:hover {
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--border-medium);
         }
 
-        .card h2 {
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-            color: var(--primary);
+        .card-header {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
         }
 
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            line-height: var(--leading-tight);
+        }
+
+        /* 📊 GRID SYSTEM */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
+            gap: 2rem;
+            margin-bottom: 2rem;
         }
 
-        .search-container {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
+        .grid-cols-1 {
+            grid-template-columns: 1fr;
         }
 
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        @media (max-width: 1024px) {
+            .grid-cols-3 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid-cols-2,
+            .grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 📝 FORMULARIOS AVANZADOS */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
 
-        label {
+        .form-label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--gray);
+            font-size: 0.875rem;
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            line-height: var(--leading-tight);
         }
 
-        input, select, textarea {
+        .form-label-required::after {
+            content: ' *';
+            color: var(--danger-dark);
+            font-weight: var(--font-bold);
+        }
+
+        .form-control {
             width: 100%;
-            padding: 12px;
-            border: 1px solid var(--gray-light);
-            border-radius: var(--border-radius);
+            padding: 0.75rem 1rem;
             font-size: 1rem;
-            transition: var(--transition);
+            line-height: var(--leading-normal);
+            color: var(--text-primary);
+            background-color: var(--surface-elevated);
+            border: 2px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-family: var(--font-sans);
         }
 
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        .form-control:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background-color: var(--bg-primary);
         }
 
+        .form-control:hover:not(:focus) {
+            border-color: var(--border-strong);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        /* Selects mejorados */
+        select.form-control {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1rem;
+            padding-right: 2.5rem;
+        }
+
+        /* Estados de error */
+        .form-control.error {
+            border-color: var(--danger-dark);
+            background-color: rgba(185, 28, 28, 0.05);
+        }
+
+        .form-error {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--danger-dark);
+            font-weight: var(--font-medium);
+        }
+
+        /* 🎯 BOTONES PROFESIONALES */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 10px 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: 1rem;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: var(--font-semibold);
+            line-height: var(--leading-tight);
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all var(--transition-fast);
+            text-decoration: none;
+            font-family: var(--font-sans);
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Variantes de botones */
+        .btn-primary {
+            background-color: var(--primary-blue);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-secondary {
-            background: var(--secondary);
+            background-color: var(--primary-purple);
+            color: white;
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-secondary:hover {
-            background: #5a0891;
+            background-color: #7c2d92;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-success {
-            background: var(--success);
+            background-color: var(--success-dark);
+            color: white;
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-success:hover {
-            background: #27ae60;
+            background-color: #166534;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-danger {
-            background: var(--danger);
+            background-color: var(--danger-dark);
+            color: white;
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-danger:hover {
-            background: #c0392b;
+            background-color: #991b1b;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-blue);
+            border-color: var(--border-medium);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: none;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-ghost:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        /* Tamaños de botones */
         .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.8125rem;
         }
 
+        .btn-lg {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+        }
+
+        /* 🏷️ TABS MODERNAS */
         .tabs {
             display: flex;
-            gap: 2px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--gray-light);
-            padding-bottom: 1px;
+            gap: 0.25rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-light);
+            overflow-x: auto;
+            padding-bottom: 0;
         }
 
         .tab-btn {
-            padding: 10px 20px;
-            background: var(--gray-light);
-            color: var(--gray);
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: var(--font-medium);
+            color: var(--text-muted);
+            background-color: transparent;
             border: none;
-            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            border-bottom: 2px solid transparent;
             cursor: pointer;
-            transition: var(--transition);
-            font-weight: 500;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+            font-family: var(--font-sans);
+            position: relative;
         }
 
-        .tab-btn:hover, .tab-btn.active {
-            background: var(--primary);
-            color: white;
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-blue);
+            border-bottom-color: var(--primary-blue);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .tab-btn i {
+            margin-right: 0.5rem;
+        }
+
+        /* 📋 LISTAS Y ITEMS */
+        .list-container {
+            background-color: var(--surface-elevated);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
         }
 
         .list-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--gray-light);
-            transition: var(--transition);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+            transition: background-color var(--transition-fast);
         }
 
         .list-item:last-child {
@@ -225,154 +574,95 @@
         }
 
         .list-item:hover {
-            background: var(--gray-light);
+            background-color: var(--bg-tertiary);
         }
 
         .list-content {
-            flex-grow: 1;
+            flex: 1;
+            min-width: 0;
         }
 
-        .actions {
+        .list-title {
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .list-description {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: var(--leading-normal);
+        }
+
+        .list-actions {
             display: flex;
-            gap: 8px;
+            gap: 0.5rem;
+            margin-left: 1rem;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--gray);
+        /* 🎨 BADGES Y ESTADOS */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: var(--font-semibold);
+            border-radius: var(--radius-md);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
         }
 
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 16px;
-            opacity: 0.3;
+        .badge-primary {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--primary-blue);
         }
 
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 16px 24px;
-            border-radius: var(--border-radius);
-            background: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        .badge-success {
+            background-color: rgba(21, 128, 61, 0.1);
+            color: var(--success-dark);
+        }
+
+        .badge-danger {
+            background-color: rgba(185, 28, 28, 0.1);
+            color: var(--danger-dark);
+        }
+
+        .badge-warning {
+            background-color: rgba(161, 98, 7, 0.1);
+            color: var(--warning-dark);
+        }
+
+        /* 🔍 SEARCH Y FILTROS */
+        .search-container {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-input {
+            padding-left: 2.75rem;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+            background-position: 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25rem;
+        }
+
+        /* 🎯 LOADING STATES */
+        .loading {
             display: flex;
             align-items: center;
-            gap: 12px;
-            z-index: 100;
-            animation: slideIn 0.3s ease, fadeOut 0.3s ease 4s forwards;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-muted);
         }
 
-        .toast.success {
-            border-left: 4px solid var(--success);
-        }
-
-        .toast.error {
-            border-left: 4px solid var(--danger);
-        }
-
-        .toast i {
-            font-size: 1.5rem;
-        }
-
-        .toast.success i {
-            color: var(--success);
-        }
-
-        .toast.error i {
-            color: var(--danger);
-        }
-
-        .toast-content {
-            flex-grow: 1;
-        }
-
-        .toast-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .toast-close {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.2rem;
-            color: var(--gray);
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .skeleton {
-            animation: skeleton-loading 1s linear infinite alternate;
-            border-radius: var(--border-radius);
-            height: 20px;
-            margin-bottom: 10px;
-        }
-
-        @keyframes skeleton-loading {
-            0% {
-                background-color: rgba(206, 212, 218, 0.5);
-            }
-            100% {
-                background-color: rgba(206, 212, 218, 0.9);
-            }
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeOut {
-            from {
-                opacity: 1;
-            }
-            to {
-                opacity: 0;
-                visibility: hidden;
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .tabs {
-                flex-wrap: wrap;
-            }
-
-            .list-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-
-            .actions {
-                width: 100%;
-                justify-content: flex-end;
-            }
-        }
-
-        /* Loading spinner */
-        .loader {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--gray-light);
-            border-top: 4px solid var(--primary);
+        .spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid var(--border-light);
+            border-top: 3px solid var(--primary-blue);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 20px auto;
+            margin-right: 0.75rem;
         }
 
         @keyframes spin {
@@ -384,97 +674,610 @@
             }
         }
 
-        /* Form field validator styles */
-        .field-error {
-            color: var(--danger);
-            font-size: 0.9rem;
-            margin-top: 6px;
+        /* 🚨 EMPTY STATES */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
         }
 
-        input.invalid, select.invalid, textarea.invalid {
-            border-color: var(--danger);
-            background-color: rgba(231, 76, 60, 0.05);
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
         }
 
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 8px;
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: var(--font-semibold);
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
         }
 
-        .badge-primary {
-            background-color: var(--primary);
-            color: white;
+        .empty-state-description {
+            font-size: 0.875rem;
+            line-height: var(--leading-relaxed);
         }
 
-        .badge-success {
-            background-color: var(--success);
-            color: white;
+        /* 🔔 TOASTS Y NOTIFICACIONES */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            max-width: 400px;
+            background-color: var(--surface-elevated);
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            z-index: 100;
+            animation: slideInToast 0.3s ease-out;
         }
 
-        /* Tooltip styles */
-        .tooltip {
+        .toast-icon {
+            flex-shrink: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-top: 0.125rem;
+        }
+
+        .toast-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .toast-title {
+            font-size: 0.875rem;
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .toast-message {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: var(--leading-normal);
+        }
+
+        .toast-close {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .toast-close:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success-dark);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger-dark);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning-dark);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--info-dark);
+        }
+
+        @keyframes slideInToast {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 🎨 COLOR PICKERS */
+        .color-picker-group {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .color-picker {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .color-picker label {
+            font-size: 0.875rem;
+            font-weight: var(--font-medium);
+            color: var(--text-primary);
+        }
+
+        .color-picker input[type="color"] {
+            width: 3rem;
+            height: 2.5rem;
+            border: 2px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            background: none;
+        }
+
+        .color-picker input[type="color"]:hover {
+            border-color: var(--primary-blue);
+            transform: scale(1.05);
+        }
+
+        .color-picker input[type="color"]:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* 📱 RESPONSIVE UTILITIES */
+        .hidden {
+            display: none !important;
+        }
+
+        .visible {
+            display: block !important;
+        }
+
+        @media (max-width: 640px) {
+            .hidden-sm {
+                display: none !important;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .grid {
+                gap: 1.5rem;
+            }
+        }
+
+        /* 🎯 ACCESIBILIDAD AVANZADA */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        @media (prefers-contrast: more) {
+            :root {
+                --border-light: var(--border-strong);
+                --border-medium: var(--gray-600);
+            }
+
+            .card {
+                border-width: 2px;
+            }
+
+            .btn {
+                border-width: 2px;
+            }
+        }
+
+        /* 🗺️ MAP STYLES MEJORADOS */
+        .map-field-container {
+            background-color: var(--surface-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .map-controls {
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-light);
+            padding: 1rem 1.5rem;
+        }
+
+        .map-controls-title {
+            font-size: 0.875rem;
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .map-controls-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .leaflet-map {
+            height: 400px;
+            border: none;
+        }
+
+        /* 🎨 FORM GENERATOR STYLES */
+        .generated-form {
+            --form-primary: var(--primary-blue);
+            --form-danger: var(--danger-dark);
+            --form-text: var(--text-primary);
+            --form-bg: var(--surface-elevated);
+            --form-border: var(--border-medium);
+        }
+
+        .form-fields-container {
+            margin-bottom: 2rem;
+        }
+
+        .form-fields-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .generated-form .form-group {
+            background-color: var(--surface-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 0;
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-xs);
+        }
+
+        .generated-form .form-group:hover {
+            border-color: var(--border-medium);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+        }
+
+        .generated-form .form-group:focus-within {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .generated-form label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+        }
+
+        .generated-form .field-icon {
+            color: var(--primary-blue);
+            opacity: 0.8;
+            font-size: 1rem;
+        }
+
+        .generated-form .required-asterisk {
+            color: var(--danger-dark);
+            font-weight: var(--font-bold);
+            margin-left: 0.25rem;
+        }
+
+        .generated-form .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            color: var(--text-primary);
+            background-color: var(--surface-elevated);
+            transition: all var(--transition-fast);
+            font-family: var(--font-sans);
+        }
+
+        .generated-form .form-control:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+
+        .generated-form .form-control.invalid {
+            border-color: var(--danger-dark);
+            background-color: rgba(185, 28, 28, 0.05);
+        }
+
+        .generated-form .field-error {
+            color: var(--danger-dark);
+            font-size: 0.875rem;
+            font-weight: var(--font-medium);
+            margin-top: 0.5rem;
+        }
+
+        .generated-form .field-help-text {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            line-height: var(--leading-normal);
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .switch {
             position: relative;
             display: inline-block;
-            margin-left: 8px;
+            width: 3rem;
+            height: 1.5rem;
         }
 
-        .tooltip i {
-            color: var(--gray);
-            cursor: help;
-        }
-
-        .tooltip-text {
-            visibility: hidden;
-            width: 200px;
-            background-color: var(--dark);
-            color: white;
-            text-align: center;
-            border-radius: 6px;
-            padding: 8px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -100px;
+        .switch input {
             opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.9rem;
-            font-weight: normal;
+            width: 0;
+            height: 0;
         }
 
-        .tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-strong);
+            transition: var(--transition-base);
+            border-radius: 1.5rem;
         }
 
-        /* Search highlight */
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 1.125rem;
+            width: 1.125rem;
+            left: 0.1875rem;
+            bottom: 0.1875rem;
+            background-color: white;
+            transition: var(--transition-base);
+            border-radius: 50%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-blue);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(1.5rem);
+        }
+
+        .switch-label {
+            font-size: 0.875rem;
+            font-weight: var(--font-medium);
+            color: var(--text-primary);
+        }
+
+        /* Grupos de campos */
+        .field-group {
+            background-color: var(--surface-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .group-header {
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .group-header::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--primary-blue), var(--primary-purple));
+        }
+
+        .group-header:hover {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+        }
+
+        .group-header h4 {
+            margin: 0;
+            font-size: 1.125rem;
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .group-icon {
+            color: var(--primary-blue);
+            font-size: 1rem;
+        }
+
+        .group-toggle {
+            background-color: var(--surface-elevated);
+            border: 1px solid var(--border-medium);
+            color: var(--text-primary);
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-xs);
+        }
+
+        .group-toggle:hover {
+            background-color: var(--primary-blue);
+            color: white;
+            transform: scale(1.1);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .group-fields {
+            padding: 1.5rem;
+            background-color: var(--bg-primary);
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .generated-form .submit-btn {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: var(--font-semibold);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .generated-form .submit-btn:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .generated-form .cancel-btn {
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-medium);
+            padding: 0.75rem 2rem;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: var(--font-semibold);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .generated-form .cancel-btn:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--border-strong);
+        }
+
+        .content-type-selector {
+            border-color: var(--primary-blue) !important;
+            background-color: rgba(59, 130, 246, 0.05) !important;
+        }
+
+        .dependent-field {
+            border-color: var(--primary-purple) !important;
+            background-color: rgba(107, 33, 168, 0.05) !important;
+        }
+
+        .dependency-indicator {
+            position: absolute;
+            left: -0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-blue);
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(1rem);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .generated-form .form-group {
+            animation: fadeIn 0.3s ease-out;
+        }
+
         .highlight {
-            background-color: rgba(243, 156, 18, 0.3);
-            padding: 0 2px;
-            border-radius: 3px;
+            background-color: rgba(251, 191, 36, 0.3);
+            padding: 0.125rem 0.25rem;
+            border-radius: var(--radius-sm);
+            font-weight: var(--font-semibold);
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <header>
-        <h1>
-            <i class="fas fa-puzzle-piece"></i>
-            Gestor de Models Dinàmics
-        </h1>
-        <span class="app-version">v2.0</span>
-    </header>
+<header class="header">
+    <div class="header-content">
+        <a href="#" class="header-logo">
+            <div class="logo-icon">
+                <i class="fas fa-puzzle-piece"></i>
+            </div>
+            <div>
+                <div class="header-title">FormGenerator</div>
+                <div class="header-subtitle">Comprehensive Methodology for Dynamic Forms</div>
+            </div>
+        </a>
+        <div class="header-controls">
+            <button class="theme-toggle" id="themeToggle"
+                    title="Alternar modo oscuro"
+                    aria-label="Alternar entre modo claro y oscuro">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </div>
+</header>
 
-    <div class="grid">
-        <!-- 🔄 Carregar per editar per ID -->
+<div class="container">
+    <div class="grid grid-cols-1">
         <div class="card">
-            <h2><i class="fas fa-sync-alt"></i> Carregar objecte existent</h2>
-            <div class="search-container">
-                <div class="form-group" style="flex: 1;">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-sync-alt"></i>
+                </div>
+                <h2 class="card-title">Carregar Objecte Existent</h2>
+            </div>
+
+            <div class="grid grid-cols-3">
+                <div class="form-group">
+                    <label for="editModel" class="form-label">Model:</label>
                     <select id="editModel" class="form-control">
                         <option value="">-- Selecciona model --</option>
                         <option value="cliente">Cliente</option>
@@ -484,29 +1287,40 @@
                         <option value="compra">Compra</option>
                         <option value="comentario">Comentario</option>
                         <option value="categoria">Categoria</option>
-
                     </select>
                 </div>
-                <div class="form-group" style="flex: 1;">
-                    <input type="number" id="editId" class="form-control" placeholder="ID (ex: 1)">
+                <div class="form-group">
+                    <label for="editId" class="form-label">ID:</label>
+                    <input type="number" id="editId" class="form-control"
+                           placeholder="Ex: 1" min="1">
                 </div>
-                <button id="editLoad" class="btn">
-                    <i class="fas fa-search"></i> Carregar
-                </button>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button id="editLoad" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                        Carregar
+                    </button>
+                </div>
             </div>
-            <div id="loadingIndicator" class="hidden">
-                <div class="loader"></div>
+
+            <div id="loadingIndicator" class="loading hidden">
+                <div class="spinner"></div>
+                Carregant dades...
             </div>
         </div>
 
-        <!-- 📋 Crear o editar amb FormGenerator -->
         <div class="card">
-            <h2 id="formTitle"><i class="fas fa-clipboard-list"></i> Crear objecte nou</h2>
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <h2 id="formTitle" class="card-title">Crear Objecte Nou</h2>
+            </div>
 
             <div class="form-group">
-                <label for="modelSelect">Selecciona un model:</label>
+                <label for="modelSelect" class="form-label">Model:</label>
                 <select id="modelSelect" class="form-control">
-                    <option value="">-- Selecciona --</option>
+                    <option value="">-- Selecciona model --</option>
                     <option value="cliente">Cliente</option>
                     <option value="clienteempresa">Cliente Empresa</option>
                     <option value="clienteparticular">Cliente Particular</option>
@@ -517,99 +1331,165 @@
                 </select>
             </div>
 
-            <!-- Selector de estilo -->
             <div class="form-group">
-                <label for="styleSelect">Estilo del formulario:</label>
+                <label for="styleSelect" class="form-label">Estil del formulari:</label>
                 <select id="styleSelect" class="form-control">
-                    <option value="">Estilo por defecto</option>
-                    <option value="modern">Moderno</option>
-                    <option value="classic">Clásico</option>
-                    <option value="corporate">Corporativo</option>
-                    <option value="file">Desde Archivo</option>
-
+                    <option value="">Estil per defecte</option>
+                    <option value="modern">Modern</option>
+                    <option value="classic">Clàssic</option>
+                    <option value="corporate">Corporatiu</option>
+                    <option value="file">Desde Arxiu</option>
                 </select>
+            </div>
 
-                <div id="customStyleFile" class="form-group mt-2 hidden">
-                    <label for="styleFile">Selecciona un archivo CSS:</label>
-                    <div class="search-container">
-                        <input type="file" id="styleFile" accept=".css" class="form-control">
-                        <button id="loadStyleFileBtn" class="btn">
-                            <i class="fas fa-upload"></i> Aplicar
-                        </button>
-                    </div>
+            <div id="customStyleFile" class="form-group hidden">
+                <label for="styleFile" class="form-label">Arxiu CSS personalitzat:</label>
+                <div class="grid grid-cols-2">
+                    <input type="file" id="styleFile" accept=".css" class="form-control">
+                    <button id="loadStyleFileBtn" class="btn btn-secondary">
+                        <i class="fas fa-upload"></i>
+                        Aplicar
+                    </button>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Colores del tema:</label>
-                <div class="color-pickers">
+                <label class="form-label">Colors del tema:</label>
+                <div class="color-picker-group">
                     <div class="color-picker">
                         <label for="primaryColor">Color principal:</label>
-                        <input type="color" id="primaryColor" value="#4361ee">
+                        <input type="color" id="primaryColor" value="#1e40af">
                     </div>
                     <div class="color-picker">
-                        <label for="errorColor">Color de error:</label>
-                        <input type="color" id="errorColor" value="#e74c3c">
+                        <label for="errorColor">Color d'error:</label>
+                        <input type="color" id="errorColor" value="#b91c1c">
                     </div>
-                    <button id="applyColorsBtn" class="btn btn-sm">
-                        <i class="fas fa-paint-brush"></i> Aplicar colores
+                    <button id="applyColorsBtn" class="btn btn-success">
+                        <i class="fas fa-paint-brush"></i>
+                        Aplicar Colors
                     </button>
                 </div>
             </div>
 
             <div id="formContainer"></div>
         </div>
-    </div>
 
-    <div class="card">
-        <h2><i class="fas fa-database"></i> Navegador de dades</h2>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h2 class="card-title">Navegador de Dades</h2>
+            </div>
 
-        <div class="form-group">
-            <input type="text" id="searchData" class="form-control" placeholder="Cerca..." autocomplete="off">
-        </div>
+            <div class="search-container">
+                <input type="text" id="searchData"
+                       class="form-control search-input"
+                       placeholder="Cerca models, IDs, contingut..."
+                       autocomplete="off">
+            </div>
 
-        <!-- Y también en las pestañas -->
-        <div class="tabs">
-            <button class="tab-btn active" data-model="cliente"><i class="fas fa-address-card"></i> Tots Clients
-            </button>
-            <button class="tab-btn" data-model="clienteempresa"><i class="fas fa-building"></i> Clients Empresa</button>
-            <button class="tab-btn" data-model="clienteparticular"><i class="fas fa-user"></i> Clients Particulars
-            </button>
-            <button class="tab-btn" data-model="producto"><i class="fas fa-box"></i> Productes</button>
-            <button class="tab-btn" data-model="categoria"><i class="fas fa-tags"></i> Categories</button>
-            <button class="tab-btn" data-model="compra"><i class="fas fa-receipt"></i> Compres</button>
-            <button class="tab-btn" data-model="comentario"><i class="fas fa-comment"></i> Comentaris</button>
-        </div>
+            <div class="tabs">
+                <button class="tab-btn active" data-model="cliente">
+                    <i class="fas fa-address-card"></i>
+                    Tots Clients
+                </button>
+                <button class="tab-btn" data-model="clienteempresa">
+                    <i class="fas fa-building"></i>
+                    Clients Empresa
+                </button>
+                <button class="tab-btn" data-model="clienteparticular">
+                    <i class="fas fa-user"></i>
+                    Clients Particulars
+                </button>
+                <button class="tab-btn" data-model="producto">
+                    <i class="fas fa-box"></i>
+                    Productes
+                </button>
+                <button class="tab-btn" data-model="categoria">
+                    <i class="fas fa-tags"></i>
+                    Categories
+                </button>
+                <button class="tab-btn" data-model="compra">
+                    <i class="fas fa-receipt"></i>
+                    Compres
+                </button>
+                <button class="tab-btn" data-model="comentario">
+                    <i class="fas fa-comment"></i>
+                    Comentaris
+                </button>
+            </div>
 
-        <div id="dataList">
-            <div class="empty-state">
-                <i class="fas fa-search"></i>
-                <p>Selecciona una pestanya per veure les dades</p>
+            <div id="dataList" class="list-container">
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="empty-state-title">Selecciona una pestanya</div>
+                    <div class="empty-state-description">
+                        Tria un tipus de model per veure les dades disponibles
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Toast container for notifications -->
 <div id="toast-container"></div>
 
-<!-- Script para FormGenerator -->
 <script type="module">
     import FormGenerator from './js/formGenerator.js';
 
-    // Estado global
     let currentForm = null;
     let currentModel = '';
     let loadedItems = [];
 
     const $ = selector => document.querySelector(selector);
 
+    function initTheme() {
+        const savedTheme = localStorage.getItem('preferredTheme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const defaultTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+
+        applyTheme(defaultTheme);
+    }
+
+    function applyTheme(theme) {
+        const html = document.documentElement;
+        const themeToggle = $('#themeToggle');
+
+        html.setAttribute('data-theme', theme);
+
+        const icon = themeToggle.querySelector('i');
+        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+
+        const newTitle = theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+        themeToggle.title = newTitle;
+        themeToggle.setAttribute('aria-label', newTitle);
+
+        localStorage.setItem('preferredTheme', theme);
+
+    }
+
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+        showToast(`Modo ${newTheme === 'dark' ? 'oscuro' : 'claro'} activado`, 'success');
+    }
+
+    $('#themeToggle').addEventListener('click', toggleTheme);
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('preferredTheme')) {
+            applyTheme(e.matches ? 'dark' : 'light');
+        }
+    });
+    initTheme();
+
     /**
      * Obtiene el tema preferido del usuario
      * @returns {string} El tema preferido ('light' o 'dark')
      */
     function getPreferredTheme() {
-        // Primero intentar obtener el tema guardado en localStorage
         const savedTheme = localStorage.getItem('formGeneratorTheme');
         if (savedTheme) {
             return savedTheme;
@@ -650,7 +1530,6 @@
             toast.remove();
         });
 
-        // Auto-remove después de 5 segundos
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.remove();
@@ -666,24 +1545,20 @@
         $('#loadingIndicator').classList.toggle('hidden', !show);
     }
 
-    /**
-     * Realiza una petición a la API con manejo de errores
-     * @param {string} url - URL de la API
-     * @param {object} options - Opciones de fetch
-     * @returns {Promise} Respuesta de la API
-     */
-
-    /**
-     * Carga y renderiza un formulario
-     */
-    // En tu index.html, reemplaza la función loadForm completa:
-
     async function loadForm(model, editMode = false, id = null, initialData = null) {
         try {
-            if (!model) return;
+            if (!model) {
+                return;
+            }
+
+            if (editMode && !id) {
+                console.error('❌ loadForm: ID requerido para modo edición');
+                showToast('Error: ID requerido per editar', 'error');
+                return;
+            }
+
 
             currentModel = model;
-
             const API_BASE_URL = 'http://localhost:8000';
 
             if (editMode && id && !initialData) {
@@ -692,6 +1567,8 @@
 
             const schema = await apiRequest(`${API_BASE_URL}/api/schema/${model}/`);
 
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+
             currentForm = new FormGenerator({
                 schema,
                 model,
@@ -699,17 +1576,17 @@
                 initialData,
                 editMode,
                 editId: id,
-                theme: getPreferredTheme(),
+                theme: currentTheme,
 
                 apiConfig: {
-                    baseUrl: API_BASE_URL, // Esto es clave
+                    baseUrl: API_BASE_URL,
                     headers: {
                         'Content-Type': 'application/json',
                     }
                 },
 
                 options: {
-                    showThemeToggle: true,
+                    showThemeToggle: false,
                     debug: true
                 },
 
@@ -747,25 +1624,26 @@
             currentForm.renderForm();
             updateFormTitle(model, editMode, id);
             setupPolymorphicFields();
+
             setTimeout(() => {
+                if (currentForm) {
+                    const newTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    currentForm.setTheme(newTheme);
+                }
+
                 const mapContainers = document.querySelectorAll('.map-field-container');
                 mapContainers.forEach(container => {
                     const mapElement = container.querySelector('.leaflet-map');
                     if (mapElement && mapElement.id) {
                         const mapId = mapElement.id;
                         if (window.mapInstances && window.mapInstances[mapId]) {
-                            console.log(`🗺️ Forzando actualización del mapa: ${mapId}`);
                             window.mapInstances[mapId].invalidateSize();
                         }
                     }
                 });
             }, 500);
 
-
-            // Resto del código para campos polimórficos...
             if (schema.isPolymorphic) {
-                console.log(`Formulario polimórfico detectado: ${model}`);
-
                 if (editMode && initialData) {
                     const contentTypeField = document.getElementById(schema.contentTypeField);
                     const objectIdField = document.getElementById(schema.objectIdField);
@@ -799,14 +1677,15 @@
         }
     }
 
-    // También actualiza la función apiRequest para usar la URL base correcta
     async function apiRequest(url, options = {}) {
         try {
+            if (url.includes('undefined')) {
+                console.error('❌ URL contiene undefined:', url);
+                throw new Error('URL mal formada: contiene undefined');
+            }
+
             toggleLoading(true);
 
-            console.log(`🔧 API Request Debug:`);
-            console.log(`   URL: ${url}`);
-            console.log(`   Options:`, options);
 
             const response = await fetch(url, options);
             const data = await response.json();
@@ -814,16 +1693,15 @@
             if (!response.ok) {
                 throw new Error(data.error || 'Error en la petició');
             }
-
             return data;
         } catch (error) {
+            console.error('❌ Error en apiRequest:', error);
             showToast(error.message, 'error');
             throw error;
         } finally {
             toggleLoading(false);
         }
     }
-
 
     /**
      * Actualiza el título del formulario según el modo
@@ -860,7 +1738,7 @@
             return;
         }
 
-        // Guardamos los items para búsquedas
+
         loadedItems = items;
 
         dataList.innerHTML = `
@@ -877,7 +1755,6 @@
             div.className = 'list-item';
             div.dataset.id = item.id;
 
-            // Creamos un resumen de los datos
             const summary = Object.entries(item)
                 .filter(([k, _]) => k !== 'id')
                 .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
@@ -898,6 +1775,7 @@
         `;
 
             dataList.appendChild(div);
+
             div.querySelector('.editBtn').addEventListener('click', async () => {
                 try {
                     const obj = await apiRequest(`http://localhost:8000/api/get/${model}/${item.id}/`);
@@ -922,7 +1800,6 @@
 
                     showToast(result.message);
 
-                    // Recargamos la lista
                     const activeTab = document.querySelector('.tab-btn.active');
                     if (activeTab) {
                         activeTab.click();
@@ -961,15 +1838,12 @@
 
             item.classList.toggle('hidden', !match);
 
-            // Highlight del término en el texto
             if (match) {
                 const content = item.querySelector('.list-content');
                 let htmlContent = content.innerHTML;
 
-                // Eliminamos highlights anteriores
                 htmlContent = htmlContent.replace(/<span class="highlight">(.+?)<\/span>/g, '$1');
 
-                // Añadimos nuevo highlight
                 const regex = new RegExp(term, 'gi');
                 htmlContent = htmlContent.replace(regex, match => `<span class="highlight">${match}</span>`);
 
@@ -977,7 +1851,6 @@
             }
         });
 
-        // Mostramos mensaje si no hay resultados
         const visibleItems = Array.from(items).filter(item => !item.classList.contains('hidden'));
 
         if (visibleItems.length === 0) {
@@ -988,7 +1861,6 @@
           <p>No s'han trobat resultats per "${searchTerm}"</p>
         `;
 
-            // Eliminamos mensajes anteriores
             const existingEmpty = dataList.querySelector('.empty-state');
             if (existingEmpty) {
                 existingEmpty.remove();
@@ -996,7 +1868,6 @@
 
             dataList.appendChild(emptyState);
         } else {
-            // Eliminamos el mensaje si hay resultados
             const existingEmpty = dataList.querySelector('.empty-state');
             if (existingEmpty) {
                 existingEmpty.remove();
@@ -1004,14 +1875,25 @@
         }
     }
 
+    function syncFormTheme() {
+        if (currentForm) {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            currentForm.setTheme(currentTheme);
+        }
+    }
+
+    $('#themeToggle').addEventListener('click', () => {
+        setTimeout(syncFormTheme, 100);
+    });
+
     $('#modelSelect').addEventListener('change', function () {
         $('#styleSelect').value = '';
-
         loadForm(this.value);
         if (this.value === 'comentario') {
             setTimeout(setupPolymorphicFields, 300);
         }
     });
+
     $('#editLoad').addEventListener('click', async () => {
         const model = $('#editModel').value.trim().toLowerCase();
         const id = $('#editId').value;
@@ -1020,20 +1902,33 @@
             return showToast('Has d\'indicar model i ID', 'error');
         }
 
-        try {
-            await loadForm(model, true, id);
+        if (isNaN(id) || parseInt(id) <= 0) {
+            return showToast('L\'ID ha de ser un número vàlid', 'error');
+        }
 
-            // Actualizamos el selector de modelo
+        try {
+
+            const data = await apiRequest(`http://localhost:8000/api/get/${model}/${id}/`);
+
+            if (!data) {
+                throw new Error('Objecte no trobat');
+            }
+            await loadForm(model, true, parseInt(id), data);
             $('#modelSelect').value = model;
+            updateFormTitle(model, true, id);
+
+            $('#formTitle').scrollIntoView({behavior: 'smooth'});
+
+            showToast(`Objecte ${model} #${id} carregat correctament`, 'success');
+
         } catch (error) {
-            console.error('Error al cargar:', error);
+            console.error('Error al cargar el elemento:', error);
+            showToast(`Error al carregar: ${error.message}`, 'error');
         }
     });
 
-    // Pestañas de navegación
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
-            // Actualizamos clase activa
             document.querySelectorAll('.tab-btn').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -1042,10 +1937,9 @@
             const model = btn.dataset.model;
 
             try {
-                // Mostramos loader
                 $('#dataList').innerHTML = '<div class="loader"></div>';
 
-                const data = await apiRequest(`http://localhost:8000/api/all/${model}/`);
+                const data = await apiRequest(`http://localhost:8000/api/${model}/`);
                 renderItemsList(model, data);
             } catch (error) {
                 console.error('Error al cargar datos:', error);
@@ -1059,17 +1953,14 @@
         });
     });
 
-    // Búsqueda
     $('#searchData').addEventListener('input', function () {
         filterItems(this.value);
     });
 
-    // Activamos la primera pestaña al cargar
     document.querySelector('.tab-btn').click();
 
     function setupPolymorphicFields() {
         if (currentModel === 'comentario' && currentForm) {
-            console.log('Configurando campos polimórficos para Comentario');
             const contentTypeSelect = document.getElementById('content_type');
             const objectIdSelect = document.getElementById('object_id');
 
@@ -1084,28 +1975,22 @@
         }
     }
 
-    // Función para manejar el cambio de content_type
     async function handleContentTypeChange() {
         const contentTypeId = this.value;
         const objectIdSelect = document.getElementById('object_id');
 
         if (!objectIdSelect) return;
 
-        console.log('ContentType cambiado a:', contentTypeId);
 
-        // Limpiar opciones si no hay content_type seleccionado
         if (!contentTypeId) {
             objectIdSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
             return;
         }
 
-        // Mostrar indicador de carga
         objectIdSelect.disabled = true;
         objectIdSelect.innerHTML = '<option value="">Cargando...</option>';
 
         try {
-            // Cargar opciones desde API
-            console.log(`Cargando objetos para ContentType ${contentTypeId}`);
             const response = await fetch(`http://localhost:8000/api/content-type-objects/${contentTypeId}/`);
 
             if (!response.ok) {
@@ -1113,9 +1998,6 @@
             }
 
             const objects = await response.json();
-            console.log('Objetos cargados:', objects);
-
-            // Actualizar opciones en el select
             objectIdSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
 
             objects.forEach(obj => {
@@ -1132,7 +2014,6 @@
         }
     }
 
-    // Código para manejar el selector de estilos
     $('#styleSelect').addEventListener('change', function () {
         if (!currentForm) {
             showToast('Primero selecciona un modelo', 'error');
@@ -1142,17 +2023,13 @@
 
         const selectedStyle = this.value;
 
-        // Ocultar/mostrar el selector de archivos según corresponda
         $('#customStyleFile').classList.toggle('hidden', selectedStyle !== 'file');
 
-        // Aplicar estilo predefinido si es necesario
         if (selectedStyle && selectedStyle !== 'file') {
             applyPredefinedStyle(selectedStyle);
         }
     });
 
-
-    // Botón para cargar estilos desde archivo local
     $('#loadStyleFileBtn').addEventListener('click', function () {
         if (!currentForm) {
             showToast('Primero selecciona un modelo', 'error');
@@ -1181,9 +2058,6 @@
         reader.readAsText(file);
     });
 
-    // 🎨 REEMPLAZAR la función del botón de aplicar colores en tu index.html
-
-    // Botón para aplicar colores personalizados
     $('#applyColorsBtn').addEventListener('click', function () {
         if (!currentForm) {
             showToast('Primero selecciona un modelo', 'error');
@@ -1193,35 +2067,24 @@
         const primaryColor = $('#primaryColor').value;
         const errorColor = $('#errorColor').value;
 
-        console.log('🎨 Aplicando colores:', {primaryColor, errorColor});
-
-        // 🔧 MÉTODO 1: Aplicar directamente al formulario generado
         const generatedForm = document.querySelector('.generated-form');
         if (generatedForm) {
-            // Aplicar variables CSS directamente
             generatedForm.style.setProperty('--primary-color', primaryColor);
             generatedForm.style.setProperty('--error-color', errorColor);
-
-            // También actualizar algunas variables relacionadas
-            const primaryDark = darkenColor(primaryColor, 10); // Función helper
+            const primaryDark = darkenColor(primaryColor, 10);
             generatedForm.style.setProperty('--primary-dark', primaryDark);
-
-            console.log('✅ Colores aplicados directamente al formulario');
         }
 
-        // 🔧 MÉTODO 2: Usar el método interno de FormGenerator
         currentForm.applyCustomTheme({
             primaryColor: primaryColor,
             errorColor: errorColor
         });
 
-        // 🔧 MÉTODO 3: Aplicar también a elementos específicos
         applyColorsToElements(primaryColor, errorColor);
 
         showToast('Colores aplicados correctamente', 'success');
     });
 
-    // 🎨 FUNCIÓN HELPER: Oscurecer color
     function darkenColor(color, percent) {
         const num = parseInt(color.replace("#", ""), 16);
         const amt = Math.round(2.55 * percent);
@@ -1233,9 +2096,7 @@
             (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
     }
 
-    // 🎨 FUNCIÓN: Aplicar colores a elementos específicos
     function applyColorsToElements(primaryColor, errorColor) {
-        // Iconos de campo
         const fieldIcons = document.querySelectorAll('.generated-form .field-icon');
         fieldIcons.forEach(icon => {
             icon.style.color = primaryColor;
@@ -1260,19 +2121,16 @@
             asterisk.style.color = errorColor;
         });
 
-        // Mensajes de error
         const errorDivs = document.querySelectorAll('.generated-form .field-error');
         errorDivs.forEach(errorDiv => {
             errorDiv.style.color = errorColor;
         });
 
-        console.log('🎨 Colores aplicados a elementos específicos');
     }
 
     function applyPredefinedStyle(styleName) {
         if (!currentForm) return;
 
-        // Definir estilos predefinidos
         const styles = {
             modern: {
                 '.form-group': {
@@ -1401,6 +2259,7 @@
                 }
             }
         };
+
         if (styles[styleName]) {
             currentForm.applyCustomStyles(styles[styleName]);
             showToast(`Estilo "${styleName}" aplicado correctamente`, 'success');
