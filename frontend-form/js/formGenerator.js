@@ -981,7 +981,6 @@ export default class FormGenerator {
      * @returns {string} - Tipo de campo detectado
      */
     detectFieldType(fieldName, fieldSchema) {
-        // 1. Verificar campos especiales por nombre
         if (fieldName === 'polygon' ||
             fieldName.includes('geojson') ||
             fieldName.includes('geometry') ||
@@ -1509,13 +1508,11 @@ export default class FormGenerator {
     handleAPIErrors(errorData) {
         if (!errorData) return;
 
-        // Para errores genéricos del formulario
         if (errorData.non_field_errors) {
             const message = Array.isArray(errorData.non_field_errors)
                 ? errorData.non_field_errors.join('. ')
                 : errorData.non_field_errors;
 
-            // Crear o mostrar un mensaje de error general
             let formError = document.querySelector('.form-general-error');
 
             if (!formError) {
@@ -1528,7 +1525,6 @@ export default class FormGenerator {
             formError.style.display = 'block';
         }
 
-        // Para errores específicos de cada campo
         for (const key in errorData) {
             if (key === 'non_field_errors') continue;
 
@@ -1712,7 +1708,6 @@ export default class FormGenerator {
      * Crea un campo booleano (switch o checkbox)
      */
     createBooleanField(key, field, value) {
-        // Si se especifica formato switch, crear un switch personalizado
         if (field.format === 'switch') {
             const switchContainer = document.createElement('div');
             switchContainer.className = 'switch-container';
